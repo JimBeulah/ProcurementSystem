@@ -38,9 +38,9 @@ async function main() {
             status: 'ACTIVE',
             boqItems: {
                 create: [
-                    { materialName: 'Cement', description: 'Portland Cement 40kg', unit: 'bags', pricePerUnit: 250.00, quantity: 1000.00 },
-                    { materialName: 'Steel Bar 10mm', description: 'Grade 40', unit: 'pcs', pricePerUnit: 180.00, quantity: 5000.00 },
-                    { materialName: 'Hollow Blocks 4"', description: 'Concrete Hollow Blocks', unit: 'pcs', pricePerUnit: 15.00, quantity: 20000.00 },
+                    { itemDescription: 'Portland Cement 40kg', unit: 'bags', materialUnitPrice: 250.00, quantity: 1000.00 },
+                    { itemDescription: 'Steel Bar 10mm Grade 40', unit: 'pcs', materialUnitPrice: 180.00, quantity: 5000.00 },
+                    { itemDescription: 'Concrete Hollow Blocks 4"', unit: 'pcs', materialUnitPrice: 15.00, quantity: 20000.00 },
                 ]
             },
             inventory: {
@@ -60,7 +60,7 @@ async function main() {
             status: 'ACTIVE',
             boqItems: {
                 create: [
-                    { materialName: 'Cement', description: 'Portland Cement 40kg', unit: 'bags', pricePerUnit: 260.00, quantity: 500.00 },
+                    { itemDescription: 'Portland Cement 40kg', unit: 'bags', materialUnitPrice: 260.00, quantity: 500.00 },
                 ]
             }
         }
