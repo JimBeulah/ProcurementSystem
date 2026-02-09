@@ -89,7 +89,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose, toggleCollapse }: SidebarProps)
 
             <motion.div
                 className={`
-                    fixed left-0 top-0 h-full bg-[#0a0a0f] border-r border-white/5 z-50 font-sans flex flex-col
+                    fixed left-0 top-0 h-full bg-background border-r border-border z-50 font-sans flex flex-col
                     md:translate-x-0
                 `}
                 variants={sidebarVariants}
@@ -97,7 +97,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose, toggleCollapse }: SidebarProps)
                 initial="hidden"
             >
                 {/* Logo Section */}
-                <div className={`flex items-center h-16 px-4 border-b border-white/5 relative ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+                <div className={`flex items-center h-16 px-4 border-b border-border relative ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                     <div className="flex items-center gap-3 overflow-hidden">
                         <motion.div
                             className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0"
@@ -112,7 +112,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose, toggleCollapse }: SidebarProps)
                                     exit={{ opacity: 0, width: 0 }}
                                     className="overflow-hidden"
                                 >
-                                    <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 whitespace-nowrap">
+                                    <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-muted whitespace-nowrap">
                                         ProcureFlow
                                     </h1>
                                 </motion.div>
@@ -128,7 +128,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose, toggleCollapse }: SidebarProps)
                                 onClick={toggleCollapse}
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="hidden md:flex p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors absolute -right-3 top-20 bg-[#0a0a0f] border border-white/10 shadow-xl rounded-full z-50"
+                                className="hidden md:flex p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-muted/10 transition-colors absolute -right-3 top-20 bg-card border border-border shadow-xl rounded-full z-50"
                             >
                                 {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={16} />}
                             </motion.button>
@@ -138,7 +138,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose, toggleCollapse }: SidebarProps)
                     {/* Mobile Close Button */}
                     <button
                         onClick={onClose}
-                        className="md:hidden p-1 text-slate-500 hover:text-white absolute right-4"
+                        className="md:hidden p-1 text-muted hover:text-foreground absolute right-4"
                     >
                         <X size={20} />
                     </button>
@@ -187,7 +187,7 @@ const NavGroup = ({ label, children, isCollapsed }: { label: string, children: R
 
     if (isCollapsed) {
         return (
-            <div className="pt-2 border-t border-white/5 mt-2 first:mt-0 first:border-0 first:pt-0">
+            <div className="pt-2 border-t border-border mt-2 first:mt-0 first:border-0 first:pt-0">
                 <div className="flex flex-col gap-1">
                     {children}
                 </div>
@@ -199,7 +199,7 @@ const NavGroup = ({ label, children, isCollapsed }: { label: string, children: R
         <div className="py-1">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center justify-between px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 hover:text-slate-300 transition-colors group"
+                className="w-full flex items-center justify-between px-3 text-[9px] font-bold text-muted uppercase tracking-widest mb-1 hover:text-foreground transition-colors group"
                 type="button"
             >
                 <span>{label}</span>
@@ -233,7 +233,7 @@ const NavItem = ({ href, icon, label, isActive, isCollapsed, onClick }: { href: 
                     group flex items-center gap-2 px-2.5 py-1.5 rounded-lg relative overflow-hidden
                     ${isActive
                         ? 'bg-blue-600/10 text-blue-400'
-                        : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                        : 'text-muted hover:text-foreground hover:bg-muted/10'
                     }
                     ${isCollapsed ? 'justify-center' : ''}
                 `}

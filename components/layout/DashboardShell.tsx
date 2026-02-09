@@ -18,7 +18,7 @@ export default function DashboardShell({
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     return (
-        <div className="flex h-screen bg-[#0a0a0f] overflow-hidden">
+        <div className="flex h-screen bg-background overflow-hidden transition-colors duration-300">
             {/* Sidebar */}
             <Sidebar
                 isOpen={sidebarOpen}

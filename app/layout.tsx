@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "Enterprise Procurement & Finance",
 };
 
+import { Providers } from "@/components/Providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -17,8 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${outfit.variable} font-sans bg-[#050508] text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200`} suppressHydrationWarning>
-        {children}
+      <body className={`${inter.variable} ${outfit.variable} font-sans bg-background text-foreground selection:bg-cyan-500/30 selection:text-cyan-200`}>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

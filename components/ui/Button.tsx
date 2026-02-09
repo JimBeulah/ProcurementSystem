@@ -13,11 +13,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 export function Button({ className, variant = 'primary', size = 'md', ...props }: ButtonProps) {
     const variants = {
-        primary: 'bg-cyan-500 hover:bg-cyan-600 text-white shadow-lg shadow-cyan-500/20',
-        secondary: 'bg-slate-700 hover:bg-slate-600 text-slate-100',
+        primary: 'bg-accent hover:opacity-90 text-white shadow-lg shadow-accent/20',
+        secondary: 'bg-muted/10 hover:bg-muted/20 text-foreground',
         danger: 'bg-red-500 hover:bg-red-600 text-white',
-        outline: 'border border-slate-700 hover:bg-slate-800 text-slate-300',
-        ghost: 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
+        outline: 'border border-border hover:bg-muted/10 text-muted hover:text-foreground',
+        ghost: 'hover:bg-muted/10 text-muted hover:text-foreground'
     };
 
     const sizes = {
