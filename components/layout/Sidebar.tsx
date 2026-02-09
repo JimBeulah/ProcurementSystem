@@ -19,12 +19,17 @@ import {
     ChevronDown
 } from 'lucide-react';
 
+import { signOutAction } from '@/actions/auth-actions';
+import { User } from 'next-auth';
+import { LogOut } from 'lucide-react';
+
 interface SidebarProps {
     isOpen?: boolean;
     onClose?: () => void;
+    user: User;
 }
 
-const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
+const Sidebar = ({ isOpen = false, onClose, user }: SidebarProps) => {
     // Handle link click to auto-close on mobile
     const handleLinkClick = () => {
         if (onClose && window.innerWidth < 768) {
@@ -102,19 +107,21 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
                 <div className="p-4 m-4 rounded-xl bg-gradient-to-br from-slate-900 to-black border border-white/5">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white shadow-lg">
-                            JD
+                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                         </div>
-                        <div className="overflow-hidden">
-                            <p className="text-sm font-medium text-white truncate">John Doe</p>
-                            <p className="text-xs text-slate-400">Purchaser</p>
+                        <div className="overflow-hidden flex-1">
+                            <p className="text-sm font-medium text-white truncate">{user.name}</p>
+                            <p className="text-xs text-slate-400 truncate">{user.email}</p>
                         </div>
-                        <Link
-                            href="/settings"
-                            onClick={handleLinkClick}
-                            className="ml-auto text-slate-500 hover:text-white transition-colors"
-                        >
-                            <Settings size={18} />
-                        </Link>
+                        <form action={signOutAction}>
+                            <button
+                                type="submit"
+                                className="text-slate-500 hover:text-red-400 transition-colors p-1"
+                                title="Sign Out"
+                            >
+                                <LogOut size={18} />
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { UserRole } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import bcrypt from 'bcryptjs';
 
 export async function createUser(data: any) {
     try {
@@ -22,11 +23,13 @@ export async function createUser(data: any) {
             return { success: false, error: 'User with this email already exists' };
         }
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         await prisma.user.create({
             data: {
                 email,
                 name,
-                password, // In a real app, you should hash this password!
+                password: hashedPassword,
                 role: role as UserRole,
             },
         });
@@ -51,7 +54,7 @@ export async function updateUser(id: number, data: any) {
 
         // Only update password if provided
         if (password && password.trim() !== '') {
-            updateData.password = password; // In a real app, hash this!
+            updateData.password = await bcrypt.hash(password, 10);
         }
 
         await prisma.user.update({

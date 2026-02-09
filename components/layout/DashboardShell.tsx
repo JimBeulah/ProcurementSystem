@@ -3,20 +3,23 @@
 import React, { useState } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import { Menu } from 'lucide-react';
+import { User } from 'next-auth';
 
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 export default function DashboardShell({
     children,
+    user,
 }: {
     children: React.ReactNode;
+    user: User;
 }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
         <div className="flex min-h-screen bg-[#0a0a0f]">
             {/* Sidebar */}
-            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} user={user} />
 
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col md:pl-72 transition-all duration-300">

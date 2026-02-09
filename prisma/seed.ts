@@ -1,9 +1,12 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
     console.log('Seeding database...')
+
+    const passwordHash = await bcrypt.hash('password123', 10)
 
     // Insert Users
     const userUpserts = [
@@ -19,11 +22,13 @@ async function main() {
     for (const u of userUpserts) {
         await prisma.user.upsert({
             where: { email: u.email },
-            update: {},
+            update: {
+                password: passwordHash // Update password if user exists
+            },
             create: {
                 email: u.email,
                 name: u.name,
-                password: 'password123', // In real app, hash this
+                password: passwordHash,
                 role: u.role as any,
             },
         })

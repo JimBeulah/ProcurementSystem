@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useActionState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Lock, ArrowRight, Loader2, User } from 'lucide-react';
+import { Lock, ArrowRight, Loader2, User, AlertCircle } from 'lucide-react';
+import { authenticate } from '@/actions/auth-actions';
 
 interface LoginDialogProps {
     isOpen: boolean;
@@ -13,19 +15,7 @@ interface LoginDialogProps {
 }
 
 export function LoginDialog({ isOpen, onClose, role, onLogin }: LoginDialogProps) {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            onLogin();
-        }, 1000);
-    };
+    const [errorMessage, formAction, isPending] = useActionState(authenticate, undefined);
 
     if (!role) return null;
 
@@ -42,17 +32,25 @@ export function LoginDialog({ isOpen, onClose, role, onLogin }: LoginDialogProps
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form action={formAction} className="space-y-4">
+                    {/* Hidden input to pass role if needed, though role is more for UI context here */}
+                    {errorMessage && (
+                        <div className="flex items-center gap-2 text-sm text-red-500 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                            <AlertCircle className="w-4 h-4" />
+                            <p>{errorMessage}</p>
+                        </div>
+                    )}
+
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300">Username</label>
+                        <label className="text-sm font-medium text-slate-300">Email</label>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
                             <input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                name="email"
+                                type="email"
                                 className="w-full bg-[#0a0a0f] border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
-                                placeholder="Enter username..."
+                                placeholder="Enter email..."
+                                required
                                 autoFocus
                             />
                         </div>
@@ -63,11 +61,11 @@ export function LoginDialog({ isOpen, onClose, role, onLogin }: LoginDialogProps
                         <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
                             <input
+                                name="password"
                                 type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
                                 className="w-full bg-[#0a0a0f] border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
-                                placeholder="Enter access password..."
+                                placeholder="Enter password..."
+                                required
                             />
                         </div>
                     </div>
@@ -76,9 +74,9 @@ export function LoginDialog({ isOpen, onClose, role, onLogin }: LoginDialogProps
                         <Button
                             type="submit"
                             className="w-full h-11 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg shadow-cyan-500/20"
-                            disabled={isLoading}
+                            disabled={isPending}
                         >
-                            {isLoading ? (
+                            {isPending ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Authenticating...
                                 </>
