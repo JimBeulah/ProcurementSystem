@@ -16,7 +16,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
     const breadcrumbs = items || generateBreadcrumbs(pathname);
 
     return (
-        <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-slate-400 mb-4">
+        <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-slate-400">
             <Link href="/dashboard" className="hover:text-cyan-400 transition-colors flex items-center gap-1">
                 <Home size={14} />
                 <span>Dashboard</span>

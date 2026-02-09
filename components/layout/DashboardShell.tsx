@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import Sidebar from '@/components/layout/Sidebar';
-import { Menu } from 'lucide-react';
+import Sidebar, { SPRING_TRANSITION } from '@/components/layout/Sidebar';
+import Header from '@/components/layout/Header';
 import { User } from 'next-auth';
+import { motion } from 'framer-motion';
 
-import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 export default function DashboardShell({
     children,
@@ -15,37 +15,42 @@ export default function DashboardShell({
     user: User;
 }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     return (
-        <div className="flex min-h-screen bg-[#0a0a0f]">
+        <div className="flex h-screen bg-[#0a0a0f] overflow-hidden">
             {/* Sidebar */}
-            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} user={user} />
+            <Sidebar
+                isOpen={sidebarOpen}
+                isCollapsed={isCollapsed}
+                onClose={() => setSidebarOpen(false)}
+                toggleCollapse={() => setIsCollapsed(!isCollapsed)}
+            />
 
             {/* Main Content Wrapper */}
-            <div className="flex-1 flex flex-col md:pl-72 transition-all duration-300">
-                {/* Mobile Header */}
-                <header className="md:hidden sticky top-0 z-40 bg-[#0a0a0f]/80 backdrop-blur-lg border-b border-white/5 p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="p-2 -ml-2 rounded-lg hover:bg-white/5 text-slate-300"
-                        >
-                            <Menu size={24} />
-                        </button>
-                        <span className="font-bold text-white tracking-tight">ProcureFlow</span>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-500" />
-                </header>
+            <motion.div
+                layout
+                initial={false}
+                animate={{
+                    marginLeft: isCollapsed ? "5rem" : "18rem"
+                }}
+                transition={SPRING_TRANSITION}
+                className="flex-1 flex flex-col h-screen overflow-hidden"
+            >
 
-                <main className="flex-1 p-4 md:p-10 relative z-10 w-full max-w-[100vw] overflow-x-hidden">
+                <Header
+                    user={user}
+                    onMenuClick={() => setSidebarOpen(true)}
+                />
+
+                <main className="flex-1 overflow-y-auto p-4 md:p-8 relative z-10 w-full overflow-x-hidden">
                     {/* Ambient Background Glows Reuse */}
                     <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
                     <div className="fixed bottom-0 right-[20%] w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] -z-10 pointer-events-none" />
 
-                    <Breadcrumbs />
                     {children}
                 </main>
-            </div>
+            </motion.div>
         </div>
     );
 }

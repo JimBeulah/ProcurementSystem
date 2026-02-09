@@ -16,161 +16,260 @@ import {
     Briefcase,
     Shield,
     ArrowDownCircle,
-    ChevronDown
+    ChevronDown,
+    Truck,
+    PieChart,
+    ChevronLeft,
+    ChevronRight,
+    LayoutDashboard
 } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 
-import { signOutAction } from '@/actions/auth-actions';
-import { User } from 'next-auth';
-import { LogOut } from 'lucide-react';
+export const SPRING_TRANSITION = {
+    type: "spring",
+    stiffness: 200,
+    damping: 25,
+    mass: 0.8,
+    restDelta: 0.001
+} as const;
+
+
+// Force rebuild 2
 
 interface SidebarProps {
-    isOpen?: boolean;
-    onClose?: () => void;
-    user: User;
+    isOpen: boolean;
+    isCollapsed: boolean;
+    onClose: () => void;
+    toggleCollapse: () => void;
 }
 
-const Sidebar = ({ isOpen = false, onClose, user }: SidebarProps) => {
+const Sidebar = ({ isOpen, isCollapsed, onClose, toggleCollapse }: SidebarProps) => {
+    const pathname = usePathname();
+
     // Handle link click to auto-close on mobile
     const handleLinkClick = () => {
-        if (onClose && window.innerWidth < 768) {
+        if (window.innerWidth < 768) {
             onClose();
         }
     };
 
+    const sidebarVariants = {
+        expanded: {
+            width: "18rem",
+            x: 0,
+            transition: SPRING_TRANSITION
+        },
+        collapsed: {
+            width: "5rem",
+            x: 0,
+            transition: SPRING_TRANSITION
+        },
+        hidden: {
+            x: "-100%",
+            transition: { ...SPRING_TRANSITION, damping: 30 }
+        }
+    };
+
+
     return (
         <>
             {/* Mobile Overlay */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-200"
-                    onClick={onClose}
-                />
-            )}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+                        onClick={onClose}
+                    />
+                )}
+            </AnimatePresence>
 
-            <div className={`
-                h-screen w-72 bg-[#0a0a0f]/95 md:bg-[#0a0a0f]/80 backdrop-blur-xl border-r border-white/5 
-                fixed left-0 top-0 flex flex-col z-50 
-                transition-transform duration-300 cubic-bezier(0.4, 0, 0.2, 1)
-                ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
-                md:translate-x-0 shadow-2xl md:shadow-none
-            `}>
-                <div className="p-8 pb-4 relative">
+            <motion.div
+                className={`
+                    fixed left-0 top-0 h-full bg-[#0a0a0f] border-r border-white/5 z-50 font-sans flex flex-col
+                    md:translate-x-0
+                `}
+                variants={sidebarVariants}
+                animate={(typeof window !== 'undefined' && window.innerWidth < 768 && !isOpen) ? "hidden" : (isCollapsed ? "collapsed" : "expanded")}
+                initial="hidden"
+            >
+                {/* Logo Section */}
+                <div className={`flex items-center h-16 px-4 border-b border-white/5 relative ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <motion.div
+                            className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0"
+                        >
+                            <Hexagon className="text-white fill-white/20" size={18} />
+                        </motion.div>
+                        <AnimatePresence>
+                            {!isCollapsed && (
+                                <motion.div
+                                    initial={{ opacity: 0, width: 0 }}
+                                    animate={{ opacity: 1, width: "auto" }}
+                                    exit={{ opacity: 0, width: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 whitespace-nowrap">
+                                        ProcureFlow
+                                    </h1>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Desktop Collapse Toggle */}
+                    <AnimatePresence>
+                        {true && ( // Always present on desktop, visibility handled by layout
+                            <motion.button
+
+                                onClick={toggleCollapse}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="hidden md:flex p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors absolute -right-3 top-20 bg-[#0a0a0f] border border-white/10 shadow-xl rounded-full z-50"
+                            >
+                                {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={16} />}
+                            </motion.button>
+                        )}
+                    </AnimatePresence>
+
                     {/* Mobile Close Button */}
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 md:hidden p-2 text-slate-500 hover:text-white transition-colors"
+                        className="md:hidden p-1 text-slate-500 hover:text-white absolute right-4"
                     >
                         <X size={20} />
                     </button>
-
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                            <Hexagon className="text-white fill-white/20" size={24} />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                                ProcureFlow
-                            </h1>
-                            <p className="text-[10px] text-slate-500 font-semibold tracking-wider uppercase">Enterprise Edition</p>
-                        </div>
-                    </div>
                 </div>
 
-                <nav className="flex-1 overflow-y-auto px-4 space-y-6">
-                    <NavItem onClick={handleLinkClick} href="/dashboard" icon={<BarChart3 />} label="Dashboard" />
+                {/* Navigation */}
+                <nav className="flex-1 overflow-y-auto overscroll-contain overflow-x-hidden p-2 space-y-0.5 no-scrollbar">
+                    <NavItem
+                        href="/dashboard"
+                        icon={<LayoutDashboard />}
+                        label="Dashboard"
+                        isActive={pathname === '/dashboard'}
+                        isCollapsed={isCollapsed}
+                        onClick={handleLinkClick}
+                    />
 
-                    <NavGroup label="Procurement" defaultExpanded={true}>
-                        <NavItem onClick={handleLinkClick} href="/clients" icon={<Users />} label="Clients" />
-                        <NavItem onClick={handleLinkClick} href="/projects" icon={<Briefcase />} label="Projects" />
-                        <NavItem onClick={handleLinkClick} href="/purchasing/rfq" icon={<FileText />} label="RFQ" />
-                        <NavItem onClick={handleLinkClick} href="/purchasing/requests" icon={<FileText />} label="Purchase Requests" />
-                        <NavItem onClick={handleLinkClick} href="/purchasing/orders" icon={<ShoppingCart />} label="Purchase Orders" />
-                        <NavItem onClick={handleLinkClick} href="/inventory/receiving" icon={<ArrowDownCircle />} label="Receive Goods" />
-                        <NavItem onClick={handleLinkClick} href="/purchasing/approvals" icon={<Shield />} label="Approvals" />
+                    <NavGroup label="Procurement" isCollapsed={isCollapsed}>
+                        <NavItem href="/clients" icon={<Users />} label="Clients" isActive={pathname.startsWith('/clients')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/projects" icon={<Briefcase />} label="Projects" isActive={pathname.startsWith('/projects')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/purchasing/rfq" icon={<FileText />} label="RFQ" isActive={pathname.startsWith('/purchasing/rfq')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/purchasing/requests" icon={<FileText />} label="Requests" isActive={pathname.startsWith('/purchasing/requests')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/purchasing/orders" icon={<ShoppingCart />} label="Orders" isActive={pathname.startsWith('/purchasing/orders')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/inventory/receiving" icon={<ArrowDownCircle />} label="Receive Goods" isActive={pathname.startsWith('/inventory/receiving')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/purchasing/approvals" icon={<Shield />} label="Approvals" isActive={pathname.startsWith('/purchasing/approvals')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
                     </NavGroup>
 
-                    <NavGroup label="Operations">
-                        <NavItem onClick={handleLinkClick} href="/inventory" icon={<Package />} label="Inventory" />
-                        <NavItem onClick={handleLinkClick} href="/receiving" icon={<Building2 />} label="Receiving" />
-                        <NavItem onClick={handleLinkClick} href="/site-release" icon={<TruckIcon />} label="Site Release" />
+                    <NavGroup label="Operations" isCollapsed={isCollapsed}>
+                        <NavItem href="/inventory" icon={<Package />} label="Inventory" isActive={pathname === '/inventory'} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/receiving" icon={<Building2 />} label="Receiving" isActive={pathname === '/receiving'} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/site-release" icon={<Truck />} label="Site Release" isActive={pathname.startsWith('/site-release')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
                     </NavGroup>
 
-                    <NavGroup label="Finance">
-                        <NavItem onClick={handleLinkClick} href="/finance/invoices" icon={<FileText />} label="Invoices" />
-                        <NavItem onClick={handleLinkClick} href="/finance/disbursements" icon={<CreditCard />} label="Disbursements" />
-                        <NavItem onClick={handleLinkClick} href="/finance/reports" icon={<PieChartIcon />} label="Reports" />
+                    <NavGroup label="Finance" isCollapsed={isCollapsed}>
+                        <NavItem href="/finance/invoices" icon={<FileText />} label="Invoices" isActive={pathname.startsWith('/finance/invoices')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/finance/disbursements" icon={<CreditCard />} label="Disbursements" isActive={pathname.startsWith('/finance/disbursements')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        <NavItem href="/finance/reports" icon={<PieChart />} label="Reports" isActive={pathname.startsWith('/finance/reports')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
                     </NavGroup>
-
-
                 </nav>
-
-                <div className="p-4 m-4 rounded-xl bg-gradient-to-br from-slate-900 to-black border border-white/5">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white shadow-lg">
-                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                        </div>
-                        <div className="overflow-hidden flex-1">
-                            <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                            <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                        </div>
-                        <form action={signOutAction}>
-                            <button
-                                type="submit"
-                                className="text-slate-500 hover:text-red-400 transition-colors p-1"
-                                title="Sign Out"
-                            >
-                                <LogOut size={18} />
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            </motion.div>
         </>
     );
 };
 
-const NavGroup = ({ label, children, defaultExpanded = false }: { label: string, children: React.ReactNode, defaultExpanded?: boolean }) => {
-    const [isExpanded, setIsExpanded] = React.useState(defaultExpanded);
+const NavGroup = ({ label, children, isCollapsed }: { label: string, children: React.ReactNode, isCollapsed: boolean }) => {
+    const [isExpanded, setIsExpanded] = React.useState(true);
+
+    if (isCollapsed) {
+        return (
+            <div className="pt-2 border-t border-white/5 mt-2 first:mt-0 first:border-0 first:pt-0">
+                <div className="flex flex-col gap-1">
+                    {children}
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-1">
+        <div className="py-1">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center justify-between px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 hover:text-slate-300 transition-colors group"
+                className="w-full flex items-center justify-between px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 hover:text-slate-300 transition-colors group"
                 type="button"
             >
                 <span>{label}</span>
                 <ChevronDown
-                    size={14}
+                    size={12}
                     className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
                 />
             </button>
-            <div className={`space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
+            <motion.div
+                initial={false}
+                animate={{ height: isExpanded ? "auto" : 0, opacity: isExpanded ? 1 : 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="overflow-hidden space-y-1"
+            >
                 {children}
-            </div>
+            </motion.div>
         </div>
     );
 };
 
-const NavItem = ({ href, icon, label, onClick }: { href: string; icon: React.ReactNode; label: string; onClick?: () => void }) => {
+const NavItem = ({ href, icon, label, isActive, isCollapsed, onClick }: { href: string; icon: React.ReactNode; label: string; isActive?: boolean; isCollapsed: boolean; onClick?: () => void }) => {
     return (
         <Link
             href={href}
             onClick={onClick}
-            className="group flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 active:bg-white/10"
+            title={isCollapsed ? label : undefined}
+            className="block"
         >
-            <span className="group-hover:text-cyan-400 transition-colors duration-200 group-hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">
-                {React.cloneElement(icon as React.ReactElement<any>, { size: 18 })}
-            </span>
-            <span className="text-sm font-medium">{label}</span>
-        </Link>
+            <motion.div
+                className={`
+                    group flex items-center gap-2 px-2.5 py-1.5 rounded-lg relative overflow-hidden
+                    ${isActive
+                        ? 'bg-blue-600/10 text-blue-400'
+                        : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                    }
+                    ${isCollapsed ? 'justify-center' : ''}
+                `}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            >
+                {isActive && (
+                    <motion.div
+                        layoutId="active-indicator"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full"
+                    />
+                )}
+
+                <span className={`
+                    transition-colors duration-200 relative z-10
+                    ${isActive ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'group-hover:text-cyan-300'}
+                `}>
+                    {React.cloneElement(icon as React.ReactElement<{ size?: number }>, { size: 16 })}
+                </span>
+
+                <AnimatePresence>
+                    {!isCollapsed && (
+                        <motion.span
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            className="text-[13px] font-medium whitespace-nowrap"
+                        >
+                            {label}
+                        </motion.span>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+        </Link >
     );
 };
-
-// Simple icons for missing lucide imports
-const TruckIcon = () => <Users size={18} />;
-const PieChartIcon = () => <FileText size={18} />;
-const DatabaseIcon = () => <Package size={18} />;
-const WorkflowIcon = () => <Settings size={18} />;
 
 export default Sidebar;
