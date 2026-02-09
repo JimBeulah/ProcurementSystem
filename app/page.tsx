@@ -1,149 +1,154 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Users, Shield, HardHat, Package, DollarSign, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+import React from 'react';
+import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
-import { LoginDialog } from '@/components/LoginDialog';
+import { Lock, ArrowRight, Loader2, User, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { authenticate } from '@/actions/auth-actions';
+import Link from 'next/link';
 
-export default function LandingPage() {
-  const router = useRouter();
-  const [isRoleSelectionOpen, setIsRoleSelectionOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<{ name: string; icon: React.ReactNode; desc: string; color: string } | null>(null);
-
-  const roles = [
-    { name: 'Admin', icon: <Shield className="w-6 h-6 text-purple-400" />, desc: 'System Config & Users', color: 'group-hover:border-purple-500/50' },
-    { name: 'Purchaser', icon: <DollarSign className="w-6 h-6 text-green-400" />, desc: 'Create Purchase Orders', color: 'group-hover:border-green-500/50' },
-    { name: 'Approver', icon: <Users className="w-6 h-6 text-blue-400" />, desc: 'Approve & Decline POs', color: 'group-hover:border-blue-500/50' },
-    { name: 'Warehouse', icon: <Package className="w-6 h-6 text-orange-400" />, desc: 'Inventory & Stock', color: 'group-hover:border-orange-500/50' },
-    { name: 'Site Engineer', icon: <HardHat className="w-6 h-6 text-yellow-400" />, desc: 'Receiving & Releases', color: 'group-hover:border-yellow-500/50' },
-  ];
-
-  const handleRoleSelect = (roleName: string) => {
-    const role = roles.find(r => r.name === roleName);
-    if (role) {
-      setSelectedRole(role);
-      setIsRoleSelectionOpen(false);
-      setIsLoginOpen(true);
-    }
-  };
-
-  const handleLogin = () => {
-    router.push('/dashboard');
-  };
+export default function LoginPage() {
+  const [errorMessage, formAction, isPending] = useActionState(authenticate, undefined);
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden font-sans">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-[0.03]" />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-transparent to-[#0a0a0f]" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f]/80 to-transparent" />
+    <div className="min-h-screen w-full flex bg-[#0a0a0f] font-sans overflow-hidden relative">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-[0.02]" />
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
 
-      {/* Navbar */}
-      <nav className="relative z-10 w-full px-8 py-6 flex justify-between items-center border-b border-white/5 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
-            <span className="text-white font-bold text-xl">P</span>
+      {/* Left Side - Hero/Branding (Hidden on mobile) */}
+      <div className="hidden lg:flex w-1/2 flex-col justify-between p-12 relative z-10 text-white">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+              <span className="text-white font-bold text-xl">P</span>
+            </div>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 font-[family-name:var(--font-outfit)]">
+              ProcureFlow
+            </span>
           </div>
-          <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 font-[family-name:var(--font-outfit)]">
-            ProcureFlow
-          </span>
         </div>
-        <div className="flex gap-4">
-          <Button variant="ghost" onClick={() => window.alert('Contact Support')}>Support</Button>
-          <Button onClick={() => setIsRoleSelectionOpen(true)} className="shadow-cyan-500/20 shadow-lg">Login Access</Button>
-        </div>
-      </nav>
 
-      {/* Hero Section */}
-      <main className="flex-1 relative z-10 container mx-auto px-6 flex flex-col justify-center max-w-7xl">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-cyan-400 mb-8 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 mr-2 animate-pulse"></span>
-            Enterprise Procurement System v1.0
-          </div>
-
-          <h1 className="text-7xl font-bold text-white mb-6 leading-tight tracking-tight font-[family-name:var(--font-outfit)]">
+        <div className="mb-12">
+          <h1 className="text-5xl font-bold mb-6 leading-tight font-[family-name:var(--font-outfit)]">
             Streamline Your <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400">
               Supply Chain
             </span>
           </h1>
-
-          <p className="text-xl text-slate-400 mb-10 max-w-2xl leading-relaxed">
-            Manage purchase requests, approvals, and inventory in one unified platform.
-            Designed for construction and material-intensive industries with DUPA integration.
+          <p className="text-lg text-slate-400 max-w-md mb-8">
+            Secure enterprise access for procurement, inventory management, and DUPA validation.
           </p>
-
-          <div className="flex gap-4">
-            <Button onClick={() => setIsRoleSelectionOpen(true)} className="h-14 px-8 text-lg bg-white text-black hover:bg-slate-200">
-              Get Started <ArrowRight className="ml-2" />
-            </Button>
-            <Button variant="outline" className="h-14 px-8 text-lg border-white/20 hover:bg-white/5">
-              View Documentation
-            </Button>
-          </div>
-
-          <div className="mt-12 flex gap-8 text-slate-500">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="text-emerald-500" size={20} /> Real-time Tracking
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-slate-400">
+              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              </div>
+              <span>Enterprise-grade Security</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="text-emerald-500" size={20} /> DUPA Validation
+            <div className="flex items-center gap-3 text-slate-400">
+              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              </div>
+              <span>Real-time Analytics</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="text-emerald-500" size={20} /> Multi-role Access
+            <div className="flex items-center gap-3 text-slate-400">
+              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              </div>
+              <span>Role-based Access Control</span>
             </div>
           </div>
         </div>
-      </main>
 
-      {/* Role Selection Modal */}
-      <Modal
-        isOpen={isRoleSelectionOpen}
-        onClose={() => setIsRoleSelectionOpen(false)}
-        title="Select Access Role"
-      >
-        <div className="space-y-4">
-          <p className="text-slate-400 mb-6 text-sm">
-            Please select your authorized role to enter the system. This is a demo environment, no password required.
-          </p>
+        <div className="text-sm text-slate-500">
+          © {new Date().getFullYear()} ProcureFlow System. All rights reserved.
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {roles.map((role) => (
-              <button
-                key={role.name}
-                onClick={() => handleRoleSelect(role.name)}
-                className={`group flex items-start p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all text-left ${role.color} hover:border`}
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative z-10">
+        <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+            {/* Decorative bloom */}
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="mb-8 text-center relative z-10">
+              <h2 className="text-2xl font-bold text-white mb-2 font-[family-name:var(--font-outfit)]">Welcome Back</h2>
+              <p className="text-slate-400 text-sm">Please enter your credentials to continue</p>
+            </div>
+
+            <form action={formAction} className="space-y-5 relative z-10">
+              {errorMessage && (
+                <div className="flex items-center gap-3 text-sm text-red-400 bg-red-500/10 p-4 rounded-xl border border-red-500/20 animate-in fade-in slide-in-from-top-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <p>{errorMessage}</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300 ml-1">Email Address</label>
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors w-5 h-5" />
+                  <input
+                    name="email"
+                    type="email"
+                    className="w-full bg-[#0a0a0f]/50 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all hover:border-white/20"
+                    placeholder="Enter your email"
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-sm font-medium text-slate-300">Password</label>
+                  <Link href="#" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors w-5 h-5" />
+                  <input
+                    name="password"
+                    type="password"
+                    className="w-full bg-[#0a0a0f]/50 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all hover:border-white/20"
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg shadow-cyan-500/25 rounded-xl font-medium text-base transition-all active:scale-[0.98] mt-2 cursor-pointer border-0 flex items-center justify-center"
+                disabled={isPending}
               >
-                <div className="mr-4 p-3 rounded-lg bg-[#0a0a0f] border border-white/10 group-hover:scale-110 transition-transform">
-                  {role.icon}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-200 group-hover:text-white transition-colors">{role.name}</h3>
-                  <p className="text-xs text-slate-500 group-hover:text-slate-400">{role.desc}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Authenticating...
+                  </>
+                ) : (
+                  <>
+                    Sign In <ArrowRight className="ml-2 w-5 h-5" />
+                  </>
+                )}
+              </Button>
+            </form>
 
-          <div className="mt-6 pt-6 border-t border-white/5 flex justify-between items-center">
-            <a href="#" className="text-xs text-slate-500 hover:text-cyan-400">Forgot credentials?</a>
-            <p className="text-xs text-slate-600">Secure AES-256 Connection</p>
+            <div className="mt-8 pt-6 border-t border-white/5 text-center relative z-10">
+              <p className="text-sm text-slate-500">
+                Don't have an account?{' '}
+                <Link href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
+                  Contact Administrator
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
-      </Modal>
-
-      {/* Login Dialog */}
-      <LoginDialog
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        role={selectedRole}
-        onLogin={handleLogin}
-      />
+      </div>
     </div>
   );
 }

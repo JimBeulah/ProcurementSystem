@@ -2,7 +2,7 @@ import type { NextAuthConfig } from 'next-auth';
 
 export const authConfig = {
     pages: {
-        signIn: '/', // Custom login page (we use a dialog on home, so redirect to home if unauth)
+        signIn: '/',
     },
     callbacks: {
         authorized({ auth, request: { nextUrl } }) {
@@ -18,9 +18,7 @@ export const authConfig = {
         async session({ session, token }) {
             if (token && session.user) {
                 session.user.id = token.sub as string;
-                // Add other properties if needed, e.g. role
-                // We need to extend the session type to include role, but for now let's rely on basic data
-                // Ideally we'd fetch the user role here or add it to the JWT
+                session.user.role = token.role as string; // Add role to session
             }
             return session;
         },
@@ -28,6 +26,8 @@ export const authConfig = {
             // user is only available on first sign in
             if (user) {
                 token.sub = user.id;
+                // @ts-ignore
+                token.role = user.role; // Add role to JWT
             }
             return token;
         }
