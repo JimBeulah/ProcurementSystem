@@ -1,7 +1,7 @@
 import React from 'react';
 import { prisma } from '@/lib/prisma';
 import { getPendingMRs } from '@/actions/mr-actions';
-import PendingApprovalsClient from '@/components/purchasing/PendingApprovalsClient';
+import PendingApprovalsWrapper from '@/components/purchasing/PendingApprovalsWrapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,7 +62,7 @@ export default async function ApprovalsPage() {
                 </div>
             </div>
 
-            <PendingApprovalsClient initialPos={pos} initialMrs={mrs} />
+            <PendingApprovalsWrapper initialPos={pos} initialMrs={mrs} />
         </div>
     );
 }

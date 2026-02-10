@@ -1,7 +1,7 @@
 import React from 'react';
-import InventorySettings from '@/components/settings/InventorySettings';
 import { Package } from 'lucide-react';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import InventorySettingsWrapper from '@/components/settings/InventorySettingsWrapper';
 
 export default function InventoryPage() {
     return (
@@ -14,7 +14,7 @@ export default function InventoryPage() {
                 <p className="text-slate-400">Configure inventory rules, stock alerts, and valuation.</p>
             </header>
 
-            <InventorySettings />
+            <InventorySettingsWrapper />
         </div>
     );
 }

@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Plus } from 'lucide-react';
-import AddMaterialDialog from './AddMaterialDialog';
+
+const AddMaterialDialog = dynamic(() => import('./AddMaterialDialog'), {
+    ssr: false
+});
 
 export default function AddMaterialButton() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);

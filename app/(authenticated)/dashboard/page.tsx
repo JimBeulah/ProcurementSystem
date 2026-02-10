@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { DollarSign, ShoppingCart, AlertCircle, Clock, Activity, ArrowUpRight, PhilippinePeso } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
-import { FinancialChart } from '@/components/dashboard/FinancialChart';
+import FinancialChartWrapper from '@/components/dashboard/FinancialChartWrapper';
 
 async function getDashboardData() {
     try {
@@ -74,7 +74,7 @@ export default async function DashboardPage() {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Financial Overview Chart */}
                     <div className="p-0"> {/* Wrapper to handle any internal chart padding if needed */}
-                        <FinancialChart />
+                        <FinancialChartWrapper />
                     </div>
 
                     {/* Recent Activities */}
