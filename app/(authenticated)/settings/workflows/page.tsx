@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Plus, Trash2, ArrowRight } from 'lucide-react';
 import { getWorkflowRules, createWorkflowRule, deleteWorkflowRule } from '@/actions/workflow-actions';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { Modal } from '@/components/ui/Modal';
 
 export default function WorkflowsPage() {
     const [rules, setRules] = useState<any[]>([]);
@@ -117,59 +118,58 @@ export default function WorkflowsPage() {
             </div>
 
             {/* Add Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1a1a20] p-6 rounded-xl w-full max-w-md border border-white/10 space-y-4">
-                        <h2 className="text-xl font-bold text-white">Add Approval Rule</h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Module</label>
-                                <select
-                                    className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
-                                    value={formData.processType}
-                                    onChange={e => setFormData({ ...formData, processType: e.target.value })}
-                                >
-                                    <option value="PO">Purchase Order (PO)</option>
-                                    <option value="RFQ">Request for Quotation (RFQ)</option>
-                                    <option value="PAYMENT">Payment / Disbursement</option>
-                                </select>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Min Amount</label>
-                                    <input type="number" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.minAmount} onChange={e => setFormData({ ...formData, minAmount: Number(e.target.value) })} />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Max Amount</label>
-                                    <input type="number" placeholder="Unlimited" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.maxAmount} onChange={e => setFormData({ ...formData, maxAmount: e.target.value })} />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Approver Role</label>
-                                <select
-                                    className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
-                                    value={formData.approverRole}
-                                    onChange={e => setFormData({ ...formData, approverRole: e.target.value })}
-                                >
-                                    <option value="PROJECT_MANAGER">Project Manager</option>
-                                    <option value="PROCUREMENT_OFFICER">Procurement Officer</option>
-                                    <option value="FINANCE">Finance</option>
-                                    <option value="AUDITOR">Auditor</option>
-                                    <option value="HEAD_OF_ADMIN">Head of Admin</option>
-                                    <option value="ADMIN">Admin</option>
-                                </select>
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-400 hover:text-white">Cancel</button>
-                                <button type="submit" className="bg-emerald-600 px-4 py-2 rounded text-white font-medium hover:bg-emerald-500">Save Rule</button>
-                            </div>
-                        </form>
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title="Add Approval Rule"
+            >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Module</label>
+                        <select
+                            className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
+                            value={formData.processType}
+                            onChange={e => setFormData({ ...formData, processType: e.target.value })}
+                        >
+                            <option value="PO">Purchase Order (PO)</option>
+                            <option value="RFQ">Request for Quotation (RFQ)</option>
+                            <option value="PAYMENT">Payment / Disbursement</option>
+                        </select>
                     </div>
-                </div>
-            )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Min Amount</label>
+                            <input type="number" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.minAmount} onChange={e => setFormData({ ...formData, minAmount: Number(e.target.value) })} />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Max Amount</label>
+                            <input type="number" placeholder="Unlimited" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.maxAmount} onChange={e => setFormData({ ...formData, maxAmount: e.target.value })} />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Approver Role</label>
+                        <select
+                            className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
+                            value={formData.approverRole}
+                            onChange={e => setFormData({ ...formData, approverRole: e.target.value })}
+                        >
+                            <option value="PROJECT_MANAGER">Project Manager</option>
+                            <option value="PROCUREMENT_OFFICER">Procurement Officer</option>
+                            <option value="FINANCE">Finance</option>
+                            <option value="AUDITOR">Auditor</option>
+                            <option value="HEAD_OF_ADMIN">Head of Admin</option>
+                            <option value="ADMIN">Admin</option>
+                        </select>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Cancel</button>
+                        <button type="submit" className="bg-emerald-600 px-6 py-2 rounded-lg text-white font-bold hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 transition-all">Save Rule</button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 }

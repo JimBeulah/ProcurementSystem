@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
-import { Inter, Outfit, Poppins, Open_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
-const poppins = Poppins({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-poppins"
+  variable: "--font-plus-jakarta"
 });
-const openSans = Open_Sans({
+const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-open-sans"
+  variable: "--font-outfit"
 });
 
 export const metadata: Metadata = {
@@ -28,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${outfit.variable} ${poppins.variable} ${openSans.variable} font-body bg-background text-foreground selection:bg-blue-500/30 selection:text-blue-200`}>
+      <body className={`${plusJakartaSans.variable} ${outfit.variable} font-body bg-background text-foreground selection:bg-blue-500/30 selection:text-blue-200`}>
         <Providers>
           {children}
         </Providers>

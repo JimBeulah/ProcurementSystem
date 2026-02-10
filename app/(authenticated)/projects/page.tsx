@@ -6,6 +6,7 @@ import { getProjects, createProject } from '@/actions/project-actions';
 import { getClients } from '@/actions/client-actions';
 import { Card } from '@/components/ui/Card';
 import Link from 'next/link';
+import { Modal } from '@/components/ui/Modal';
 
 export default function ProjectsPage() {
     const [projects, setProjects] = useState<any[]>([]);
@@ -104,48 +105,47 @@ export default function ProjectsPage() {
             )}
 
             {/* Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1a1a20] p-6 rounded-xl w-full max-w-md border border-white/10 space-y-4">
-                        <h2 className="text-xl font-bold text-white">Create New Project</h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Client</label>
-                                <select className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.clientId} onChange={e => setFormData({ ...formData, clientId: e.target.value })} required>
-                                    <option value="">Select Client</option>
-                                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Project Name</label>
-                                <input className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-                            </div>
-
-                            <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Location</label>
-                                <input className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Budget</label>
-                                    <input type="number" step="0.01" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} required />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Duration</label>
-                                    <input placeholder="e.g. 12 Months" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-400 hover:text-white">Cancel</button>
-                                <button type="submit" className="bg-cyan-600 px-4 py-2 rounded text-white font-medium hover:bg-cyan-500">Create Project</button>
-                            </div>
-                        </form>
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title="Create New Project"
+            >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Client</label>
+                        <select className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.clientId} onChange={e => setFormData({ ...formData, clientId: e.target.value })} required>
+                            <option value="">Select Client</option>
+                            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
                     </div>
-                </div>
-            )}
+
+                    <div>
+                        <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Project Name</label>
+                        <input className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                    </div>
+
+                    <div>
+                        <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Location</label>
+                        <input className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Budget</label>
+                            <input type="number" step="0.01" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} required />
+                        </div>
+                        <div>
+                            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Duration</label>
+                            <input placeholder="e.g. 12 Months" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Cancel</button>
+                        <button type="submit" className="bg-cyan-600 px-6 py-2 rounded-lg text-white font-bold hover:bg-cyan-500 shadow-lg shadow-cyan-600/20 transition-all">Create Project</button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 }

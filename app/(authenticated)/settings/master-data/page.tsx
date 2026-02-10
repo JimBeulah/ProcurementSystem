@@ -7,6 +7,7 @@ import { generateEAN13 } from '@/lib/utils';
 import { Package, Truck, Home, Plus, Search, RefreshCcw } from 'lucide-react';
 import { getSuppliers, getMaterials, getWarehouses, createSupplier, createMaterial, createWarehouse } from '@/actions/master-data-actions';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { Modal } from '@/components/ui/Modal';
 
 export default function MasterDataPage() {
     const [activeTab, setActiveTab] = useState<'suppliers' | 'materials' | 'warehouses'>('suppliers');
@@ -155,85 +156,83 @@ export default function MasterDataPage() {
             </div>
 
             {/* Simple Modal Implementation */}
-            {showAddModal && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1a1a20] p-6 rounded-xl w-full max-w-md border border-white/10 space-y-4">
-                        <h2 className="text-xl font-bold text-white mb-4">Add New {activeTab.slice(0, -1)}</h2>
-
-                        <form onSubmit={handleAdd} className="space-y-4">
-                            {activeTab === 'suppliers' && (
-                                <>
-                                    <input placeholder="Company Name" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.name || ''} onChange={e => setNewItem({ ...newItem, name: e.target.value })} required />
-                                    <input placeholder="Contact Person" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.contactPerson || ''} onChange={e => setNewItem({ ...newItem, contactPerson: e.target.value })} />
-                                    <input placeholder="Email" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.email || ''} onChange={e => setNewItem({ ...newItem, email: e.target.value })} />
-                                </>
-                            )}
-                            {activeTab === 'materials' && (
-                                <>
-                                    <div className="flex gap-2">
-                                        <input
-                                            placeholder="Material Code (Unique)"
-                                            className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
-                                            value={newItem.code || ''}
-                                            onChange={e => setNewItem({ ...newItem, code: e.target.value })}
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setNewItem({ ...newItem, code: generateEAN13() })}
-                                            className="px-3 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-                                            title="Generate EAN-13"
-                                        >
-                                            <RefreshCcw size={18} />
-                                        </button>
-                                    </div>
-                                    <input placeholder="Material Name" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.name || ''} onChange={e => setNewItem({ ...newItem, name: e.target.value })} required />
-
-                                    {/* Unit Dropdown */}
-                                    <select
-                                        className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
-                                        value={newItem.unit || ''}
-                                        onChange={e => setNewItem({ ...newItem, unit: e.target.value })}
-                                        required
-                                    >
-                                        <option value="">Select Unit</option>
-                                        {units.map((u: any) => (
-                                            <option key={u.id} value={u.abbreviation}>{u.name} ({u.abbreviation})</option>
-                                        ))}
-                                    </select>
-
-                                    {/* Category Dropdown */}
-                                    <select
-                                        className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
-                                        value={newItem.category || ''}
-                                        onChange={e => setNewItem({ ...newItem, category: e.target.value })}
-                                    >
-                                        <option value="">Select Category</option>
-                                        {categories.map((c: any) => (
-                                            <option key={c.id} value={c.name}>{c.name}</option>
-                                        ))}
-                                    </select>
-                                </>
-                            )}
-                            {activeTab === 'warehouses' && (
-                                <>
-                                    <input placeholder="Warehouse Name" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.name || ''} onChange={e => setNewItem({ ...newItem, name: e.target.value })} required />
-                                    <input placeholder="Location" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.location || ''} onChange={e => setNewItem({ ...newItem, location: e.target.value })} />
-                                    <select className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.type || 'CENTRAL'} onChange={e => setNewItem({ ...newItem, type: e.target.value })}>
-                                        <option value="CENTRAL">Central</option>
-                                        <option value="SITE">Site</option>
-                                    </select>
-                                </>
-                            )}
-
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-slate-400 hover:text-white">Cancel</button>
-                                <button type="submit" className="bg-blue-600 px-4 py-2 rounded text-white font-medium hover:bg-blue-500">Save</button>
+            <Modal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                title={`Add New ${activeTab.slice(0, -1)}`}
+            >
+                <form onSubmit={handleAdd} className="space-y-4">
+                    {activeTab === 'suppliers' && (
+                        <>
+                            <input placeholder="Company Name" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.name || ''} onChange={e => setNewItem({ ...newItem, name: e.target.value })} required />
+                            <input placeholder="Contact Person" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.contactPerson || ''} onChange={e => setNewItem({ ...newItem, contactPerson: e.target.value })} />
+                            <input placeholder="Email" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.email || ''} onChange={e => setNewItem({ ...newItem, email: e.target.value })} />
+                        </>
+                    )}
+                    {activeTab === 'materials' && (
+                        <>
+                            <div className="flex gap-2">
+                                <input
+                                    placeholder="Material Code (Unique)"
+                                    className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
+                                    value={newItem.code || ''}
+                                    onChange={e => setNewItem({ ...newItem, code: e.target.value })}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setNewItem({ ...newItem, code: generateEAN13() })}
+                                    className="px-3 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                    title="Generate EAN-13"
+                                >
+                                    <RefreshCcw size={18} />
+                                </button>
                             </div>
-                        </form>
+                            <input placeholder="Material Name" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.name || ''} onChange={e => setNewItem({ ...newItem, name: e.target.value })} required />
+
+                            {/* Unit Dropdown */}
+                            <select
+                                className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
+                                value={newItem.unit || ''}
+                                onChange={e => setNewItem({ ...newItem, unit: e.target.value })}
+                                required
+                            >
+                                <option value="">Select Unit</option>
+                                {units.map((u: any) => (
+                                    <option key={u.id} value={u.abbreviation}>{u.name} ({u.abbreviation})</option>
+                                ))}
+                            </select>
+
+                            {/* Category Dropdown */}
+                            <select
+                                className="w-full bg-black/20 border border-white/10 rounded p-2 text-white"
+                                value={newItem.category || ''}
+                                onChange={e => setNewItem({ ...newItem, category: e.target.value })}
+                            >
+                                <option value="">Select Category</option>
+                                {categories.map((c: any) => (
+                                    <option key={c.id} value={c.name}>{c.name}</option>
+                                ))}
+                            </select>
+                        </>
+                    )}
+                    {activeTab === 'warehouses' && (
+                        <>
+                            <input placeholder="Warehouse Name" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.name || ''} onChange={e => setNewItem({ ...newItem, name: e.target.value })} required />
+                            <input placeholder="Location" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.location || ''} onChange={e => setNewItem({ ...newItem, location: e.target.value })} />
+                            <select className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={newItem.type || 'CENTRAL'} onChange={e => setNewItem({ ...newItem, type: e.target.value })}>
+                                <option value="CENTRAL">Central</option>
+                                <option value="SITE">Site</option>
+                            </select>
+                        </>
+                    )}
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Cancel</button>
+                        <button type="submit" className="bg-blue-600 px-6 py-2 rounded-lg text-white font-bold hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all">Save</button>
                     </div>
-                </div>
-            )}
+                </form>
+            </Modal>
         </div>
     );
 }

@@ -139,8 +139,8 @@ export default function ProjectMrPage({ params }: MrPageProps) {
                                                 )}
                                             </div>
                                             <span className={`text-[10px] px-2 py-0.5 rounded font-bold border ${mr.status === 'PENDING' ? 'border-yellow-500/50 text-yellow-500 bg-yellow-500/5' :
-                                                    mr.status === 'APPROVED' ? 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5' :
-                                                        'border-slate-500/50 text-slate-500 bg-slate-500/5'
+                                                mr.status === 'APPROVED' ? 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5' :
+                                                    'border-slate-500/50 text-slate-500 bg-slate-500/5'
                                                 }`}>
                                                 {mr.status}
                                             </span>
@@ -192,8 +192,15 @@ export default function ProjectMrPage({ params }: MrPageProps) {
 
             {/* Create MR Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1a1a20] p-6 rounded-xl w-full max-w-lg border border-white/10 space-y-4">
+                <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity"
+                        onClick={() => setShowModal(false)}
+                    />
+
+                    {/* Modal Content */}
+                    <div className="relative z-10 bg-[#1a1a20]/80 backdrop-blur-xl p-6 rounded-xl w-full max-w-lg border border-white/10 space-y-4 shadow-2xl">
                         <h2 className="text-xl font-bold text-white">New Material Request</h2>
 
                         {/* Horizontal Item Entry Row */}

@@ -7,16 +7,21 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-muted: var(--muted);
+
+  --font-heading: var(--font-plus-jakarta), ui-sans-serif, system-ui;
+  --font-body: var(--font-outfit), ui-sans-serif, system-ui;
 }
 
 :root {
   --background: #f8fafc;
   --foreground: #1e293b;
   --card: rgba(255, 255, 255, 0.95);
-  --border: rgba(30, 41, 59, 0.08); /* Tighter border */
-  --accent: #2563eb; /* Primary Blue from Design System */
+  --border: rgba(30, 41, 59, 0.08);
+  /* Tighter border */
+  --accent: #2563eb;
+  /* Primary Blue from Design System */
   --muted: #64748b;
-  
+
   /* Design System Additions */
   --color-primary: #2563eb;
   --color-secondary: #3b82f6;
@@ -27,24 +32,29 @@
   /* Compact Spacing Tokens */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
-  --space-md: 0.75rem; /* Reduced from 1rem for compactness */
-  --space-lg: 1.25rem; /* Reduced from 1.5rem */
-  --space-xl: 1.75rem; /* Reduced from 2rem */
-  
+  --space-md: 0.75rem;
+  /* Reduced from 1rem for compactness */
+  --space-lg: 1.25rem;
+  /* Reduced from 1.5rem */
+  --space-xl: 1.75rem;
+  /* Reduced from 2rem */
+
   /* Shadow Depths */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.06); /* Tighter shadows */
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.06);
+  /* Tighter shadows */
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
 }
 
 .dark {
   --background: #050508;
   --foreground: #f1f5f9;
-  --card: #0c0c12; /* Slightly darker/denser */
+  --card: #0c0c12;
+  /* Slightly darker/denser */
   --border: rgba(255, 255, 255, 0.06);
-  --accent: #3b82f6; 
+  --accent: #3b82f6;
   --muted: #94a3b8;
-  
+
   --color-primary: #3b82f6;
   --color-secondary: #60a5fa;
   --color-cta: #fb923c;
@@ -62,8 +72,19 @@ body {
 
 body {
   color: var(--foreground);
+  font-family: var(--font-body);
   font-feature-settings: "ss01", "ss02", "cv01", "cv02";
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
 }
 
 /* Technical Light Mode Background */
