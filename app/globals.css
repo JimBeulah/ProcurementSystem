@@ -11,29 +11,45 @@
 
 :root {
   --background: #f8fafc;
-  /* Slate 50 - Technical Light */
-  --foreground: #0f172a;
-  /* Slate 900 */
-  --card: rgba(255, 255, 255, 0.9);
-  --border: rgba(15, 23, 42, 0.12);
-  --accent: #0284c7;
-  /* Sky 600 - Better contrast in light mode */
-  --muted: #475569;
-  /* Slate 600 - Darker for better contrast */
+  --foreground: #1e293b;
+  --card: rgba(255, 255, 255, 0.95);
+  --border: rgba(30, 41, 59, 0.08); /* Tighter border */
+  --accent: #2563eb; /* Primary Blue from Design System */
+  --muted: #64748b;
+  
+  /* Design System Additions */
+  --color-primary: #2563eb;
+  --color-secondary: #3b82f6;
+  --color-cta: #f97316;
+  --color-background: #f8fafc;
+  --color-text: #1e293b;
+
+  /* Compact Spacing Tokens */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem; /* Reduced from 1rem for compactness */
+  --space-lg: 1.25rem; /* Reduced from 1.5rem */
+  --space-xl: 1.75rem; /* Reduced from 2rem */
+  
+  /* Shadow Depths */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.06); /* Tighter shadows */
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05);
 }
 
 .dark {
   --background: #050508;
-  /* Deep Black */
   --foreground: #f1f5f9;
-  /* Slate 100 - Brighter */
-  --card: #111118;
-  /* Solid dark background */
-  --border: rgba(255, 255, 255, 0.1);
-  --accent: #22d3ee;
-  /* Cyan 400 */
+  --card: #0c0c12; /* Slightly darker/denser */
+  --border: rgba(255, 255, 255, 0.06);
+  --accent: #3b82f6; 
   --muted: #94a3b8;
-  /* Slate 400 */
+  
+  --color-primary: #3b82f6;
+  --color-secondary: #60a5fa;
+  --color-cta: #fb923c;
+  --color-background: #050508;
+  --color-text: #f1f5f9;
 }
 
 html,

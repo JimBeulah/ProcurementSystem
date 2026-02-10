@@ -23,73 +23,82 @@ export function FinancialChart() {
 
     if (!mounted) {
         return (
-            <Card className="col-span-1 lg:col-span-2 h-[400px] flex items-center justify-center">
-                <div className="text-slate-500">Loading Chart...</div>
+            <Card className="h-[320px] flex items-center justify-center">
+                <div className="text-xs text-muted animate-pulse">Loading Financial Data...</div>
             </Card>
         );
     }
 
     return (
-        <Card className="col-span-1 lg:col-span-2 h-[400px]">
-            <div className="flex items-center justify-between mb-6">
+        <Card className="h-[320px] p-4">
+            <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h3 className="text-xl font-bold text-white">Financial Overview</h3>
-                    <p className="text-sm text-slate-400">Cost, Expenses, and Profit Trends</p>
+                    <h3 className="text-lg font-bold tracking-tight font-[family-name:var(--font-poppins)]">Financial Overview</h3>
+                    <p className="text-[11px] text-muted font-medium">Monthly revenue, expenses, and profit trends</p>
                 </div>
-                <div className="flex gap-4 text-sm">
-                    <div className="flex items-center gap-2 text-slate-400">
-                        <span className="w-3 h-3 rounded-full bg-cyan-500"></span> Profit
+                <div className="flex gap-3 text-[10px] font-bold uppercase tracking-wider">
+                    <div className="flex items-center gap-1.5 text-emerald-600">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Profit
                     </div>
-                    <div className="flex items-center gap-2 text-slate-400">
-                        <span className="w-3 h-3 rounded-full bg-purple-500"></span> Expenses
+                    <div className="flex items-center gap-1.5 text-rose-600">
+                        <span className="w-2 h-2 rounded-full bg-rose-500"></span> Expenses
                     </div>
-                    <div className="flex items-center gap-2 text-slate-400">
-                        <span className="w-3 h-3 rounded-full bg-blue-500"></span> Cost
+                    <div className="flex items-center gap-1.5 text-blue-600">
+                        <span className="w-2 h-2 rounded-full bg-blue-500"></span> Cost
                     </div>
                 </div>
             </div>
 
-            <div className="h-[300px] w-full">
+            <div className="h-[220px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                         data={data}
-                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                        margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
                     >
                         <defs>
                             <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                             </linearGradient>
                             <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                                <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.15} />
+                                <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                             </linearGradient>
                             <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
                                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border/40" vertical={false} />
                         <XAxis
                             dataKey="name"
-                            stroke="#94a3b8"
-                            fontSize={12}
+                            stroke="currentColor"
+                            className="text-muted/60 font-medium"
+                            fontSize={10}
                             tickLine={false}
                             axisLine={false}
+                            dy={10}
                         />
                         <YAxis
-                            stroke="#94a3b8"
-                            fontSize={12}
+                            stroke="currentColor"
+                            className="text-muted/60 font-medium"
+                            fontSize={10}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={(value) => `₱${value}`}
+                            tickFormatter={(value) => `₱${value / 1000}k`}
                         />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f8fafc' }}
-                            itemStyle={{ color: '#cbd5e1' }}
+                            contentStyle={{
+                                backgroundColor: 'var(--card)',
+                                borderColor: 'var(--border)',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                boxShadow: 'var(--shadow-lg)'
+                            }}
+                            itemStyle={{ fontWeight: '600' }}
                         />
-                        <Area type="monotone" dataKey="profit" stroke="#06b6d4" fillOpacity={1} fill="url(#colorProfit)" strokeWidth={2} />
-                        <Area type="monotone" dataKey="expenses" stroke="#a855f7" fillOpacity={1} fill="url(#colorExpenses)" strokeWidth={2} />
+                        <Area type="monotone" dataKey="profit" stroke="#10b981" fillOpacity={1} fill="url(#colorProfit)" strokeWidth={2} />
+                        <Area type="monotone" dataKey="expenses" stroke="#f43f5e" fillOpacity={1} fill="url(#colorExpenses)" strokeWidth={2} />
                         <Area type="monotone" dataKey="cost" stroke="#3b82f6" fillOpacity={1} fill="url(#colorCost)" strokeWidth={2} />
                     </AreaChart>
                 </ResponsiveContainer>

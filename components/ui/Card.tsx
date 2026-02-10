@@ -16,8 +16,9 @@ export function Card({ className, children, hoverEffect = false }: CardProps) {
     return (
         <div
             className={cn(
-                "glass-card rounded-2xl p-6 transition-all duration-300",
-                hoverEffect && "hover:bg-white/10 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/10 hover:border-cyan-500/30",
+                "glass-card rounded-xl p-4 transition-all duration-200", // p-6 -> p-4
+                "shadow-sm border-border/40", // Tighter border/shadow
+                hoverEffect && "hover:bg-accent/[0.02] hover:-translate-y-0.5 hover:shadow-md hover:border-accent/20 cursor-pointer",
                 className
             )}
         >
