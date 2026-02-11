@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { User } from 'next-auth';
+import { hasAccess } from '@/lib/rbac';
 
 export const SPRING_TRANSITION = {
     type: "spring",
@@ -38,13 +40,14 @@ export const SPRING_TRANSITION = {
 // Force rebuild 2
 
 interface SidebarProps {
+    user: User;
     isOpen: boolean;
     isCollapsed: boolean;
     onClose: () => void;
     toggleCollapse: () => void;
 }
 
-const Sidebar = ({ isOpen, isCollapsed, onClose, toggleCollapse }: SidebarProps) => {
+const Sidebar = ({ user, isOpen, isCollapsed, onClose, toggleCollapse }: SidebarProps) => {
     const pathname = usePathname();
 
     // Handle link click to auto-close on mobile
@@ -146,35 +149,37 @@ const Sidebar = ({ isOpen, isCollapsed, onClose, toggleCollapse }: SidebarProps)
 
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto overscroll-contain overflow-x-hidden p-2 space-y-0.5 no-scrollbar">
-                    <NavItem
-                        href="/dashboard"
-                        icon={<LayoutDashboard />}
-                        label="Dashboard"
-                        isActive={pathname === '/dashboard'}
-                        isCollapsed={isCollapsed}
-                        onClick={handleLinkClick}
-                    />
+                    {hasAccess(user?.role, 'dashboard') && (
+                        <NavItem
+                            href="/dashboard"
+                            icon={<LayoutDashboard />}
+                            label="Dashboard"
+                            isActive={pathname === '/dashboard'}
+                            isCollapsed={isCollapsed}
+                            onClick={handleLinkClick}
+                        />
+                    )}
 
                     <NavGroup label="Procurement" isCollapsed={isCollapsed}>
-                        <NavItem href="/clients" icon={<Users />} label="Clients" isActive={pathname.startsWith('/clients')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/projects" icon={<Briefcase />} label="Projects" isActive={pathname.startsWith('/projects')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/purchasing/rfq" icon={<FileText />} label="RFQ" isActive={pathname.startsWith('/purchasing/rfq')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/purchasing/requests" icon={<FileText />} label="Requests" isActive={pathname.startsWith('/purchasing/requests')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/purchasing/orders" icon={<ShoppingCart />} label="Orders" isActive={pathname.startsWith('/purchasing/orders')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/inventory/receiving" icon={<ArrowDownCircle />} label="Receive Goods" isActive={pathname.startsWith('/inventory/receiving')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/purchasing/approvals" icon={<Shield />} label="Approvals" isActive={pathname.startsWith('/purchasing/approvals')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        {hasAccess(user?.role, 'clients') && <NavItem href="/clients" icon={<Users />} label="Clients" isActive={pathname.startsWith('/clients')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'projects') && <NavItem href="/projects" icon={<Briefcase />} label="Projects" isActive={pathname.startsWith('/projects')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'rfq') && <NavItem href="/purchasing/rfq" icon={<FileText />} label="RFQ" isActive={pathname.startsWith('/purchasing/rfq')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'requests') && <NavItem href="/purchasing/requests" icon={<FileText />} label="Requests" isActive={pathname.startsWith('/purchasing/requests')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'orders') && <NavItem href="/purchasing/orders" icon={<ShoppingCart />} label="Orders" isActive={pathname.startsWith('/purchasing/orders')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'receiving-goods') && <NavItem href="/inventory/receiving" icon={<ArrowDownCircle />} label="Receive Goods" isActive={pathname.startsWith('/inventory/receiving')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'approvals') && <NavItem href="/purchasing/approvals" icon={<Shield />} label="Approvals" isActive={pathname.startsWith('/purchasing/approvals')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
                     </NavGroup>
 
                     <NavGroup label="Operations" isCollapsed={isCollapsed}>
-                        <NavItem href="/inventory" icon={<Package />} label="Inventory" isActive={pathname === '/inventory'} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/receiving" icon={<Building2 />} label="Receiving" isActive={pathname === '/receiving'} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/site-release" icon={<Truck />} label="Site Release" isActive={pathname.startsWith('/site-release')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        {hasAccess(user?.role, 'inventory') && <NavItem href="/inventory" icon={<Package />} label="Inventory" isActive={pathname === '/inventory'} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'receiving') && <NavItem href="/receiving" icon={<Building2 />} label="Receiving" isActive={pathname === '/receiving'} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'site-release') && <NavItem href="/site-release" icon={<Truck />} label="Site Release" isActive={pathname.startsWith('/site-release')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
                     </NavGroup>
 
                     <NavGroup label="Finance" isCollapsed={isCollapsed}>
-                        <NavItem href="/finance/invoices" icon={<FileText />} label="Invoices" isActive={pathname.startsWith('/finance/invoices')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/finance/disbursements" icon={<CreditCard />} label="Disbursements" isActive={pathname.startsWith('/finance/disbursements')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
-                        <NavItem href="/finance/reports" icon={<PieChart />} label="Reports" isActive={pathname.startsWith('/finance/reports')} isCollapsed={isCollapsed} onClick={handleLinkClick} />
+                        {hasAccess(user?.role, 'invoices') && <NavItem href="/finance/invoices" icon={<FileText />} label="Invoices" isActive={pathname.startsWith('/finance/invoices')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'disbursements') && <NavItem href="/finance/disbursements" icon={<CreditCard />} label="Disbursements" isActive={pathname.startsWith('/finance/disbursements')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
+                        {hasAccess(user?.role, 'reports') && <NavItem href="/finance/reports" icon={<PieChart />} label="Reports" isActive={pathname.startsWith('/finance/reports')} isCollapsed={isCollapsed} onClick={handleLinkClick} />}
                     </NavGroup>
                 </nav>
             </motion.div>

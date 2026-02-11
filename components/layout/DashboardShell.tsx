@@ -21,6 +21,7 @@ export default function DashboardShell({
         <div className="flex h-screen bg-background overflow-hidden transition-colors duration-300">
             {/* Sidebar */}
             <Sidebar
+                user={user}
                 isOpen={sidebarOpen}
                 isCollapsed={isCollapsed}
                 onClose={() => setSidebarOpen(false)}

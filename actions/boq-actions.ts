@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { serialize } from '@/lib/utils';
+import { auth } from '@/auth';
+import { canEdit } from '@/lib/rbac';
 
 export async function getProjectBoq(projectId: number) {
     console.log(`[ACTION] Fetching BOQ for Project: ${projectId} (${typeof projectId})`);
@@ -41,6 +43,11 @@ export async function createBoqItem(data: {
         unitRate: number;
     }[];
 }) {
+    const session = await auth();
+    if (!canEdit(session?.user?.role, 'projects')) {
+        return { success: false, error: 'Unauthorized: You do not have permission to modify BOQ' };
+    }
+
     try {
         const components = data.components || [];
 
@@ -96,6 +103,11 @@ export async function updateBoqItem(id: number, projectId: number, data: {
         unitRate: number;
     }[];
 }) {
+    const session = await auth();
+    if (!canEdit(session?.user?.role, 'projects')) {
+        return { success: false, error: 'Unauthorized: You do not have permission to modify BOQ' };
+    }
+
     try {
         const components = data.components || [];
 
@@ -145,6 +157,11 @@ export async function updateBoqItem(id: number, projectId: number, data: {
     }
 }
 export async function bulkCreateBoqItems(projectId: number, items: any[]) {
+    const session = await auth();
+    if (!canEdit(session?.user?.role, 'projects')) {
+        return { success: false, error: 'Unauthorized: You do not have permission to modify BOQ' };
+    }
+
     try {
         await prisma.$transaction(
             items.map(item => prisma.boqItem.upsert({
