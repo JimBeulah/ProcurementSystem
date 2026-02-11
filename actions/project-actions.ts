@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { serialize } from '@/lib/utils';
 
 export async function getProjects() {
     try {
@@ -9,10 +10,7 @@ export async function getProjects() {
             include: { client: true },
             orderBy: { createdAt: 'desc' }
         });
-        return projects.map(p => ({
-            ...p,
-            budget: Number(p.budget)
-        }));
+        return serialize(projects);
     } catch (e) {
         return [];
     }
@@ -53,12 +51,7 @@ export async function getProject(id: number) {
 
         if (!project) return null;
 
-        return {
-            ...project,
-            budget: Number(project.budget),
-            totalFloorArea: Number(project.totalFloorArea || 0),
-            carportArea: Number(project.carportArea || 0)
-        };
+        return serialize(project);
     } catch (e) {
         return null;
     }

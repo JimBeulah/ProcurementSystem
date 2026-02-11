@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { MrStatus } from '@prisma/client';
+import { serialize } from '@/lib/utils';
 
 export async function getProjectMRs(projectId: number) {
     try {
@@ -14,15 +15,7 @@ export async function getProjectMRs(projectId: number) {
             },
             orderBy: { requestDate: 'desc' }
         });
-        return mrs.map(mr => ({
-            ...mr,
-            items: mr.items.map(i => ({
-                ...i,
-                quantity: Number(i.quantity),
-                materialUnitPrice: Number(i.materialUnitPrice || 0),
-                laborUnitPrice: Number(i.laborUnitPrice || 0)
-            }))
-        }));
+        return serialize(mrs);
     } catch (e) {
         return [];
     }
@@ -100,16 +93,7 @@ export async function getPendingMRs() {
             },
             orderBy: { requestDate: 'asc' }
         });
-        return mrs.map(mr => ({
-            ...mr,
-            project: mr.project ? { ...mr.project, budget: Number(mr.project.budget) } : null,
-            items: mr.items.map(i => ({
-                ...i,
-                quantity: Number(i.quantity),
-                materialUnitPrice: Number(i.materialUnitPrice || 0),
-                laborUnitPrice: Number(i.laborUnitPrice || 0)
-            }))
-        }));
+        return serialize(mrs);
     } catch (e) {
         return [];
     }

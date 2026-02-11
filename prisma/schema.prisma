@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/client"
 }
 
 datasource db {
@@ -55,6 +56,12 @@ enum PaymentMethod {
   CASH
   CHECK
   ONLINE
+}
+
+enum ResourceType {
+  MATERIAL
+  LABOR
+  EQUIPMENT
 }
 
 // Users of the system
@@ -149,8 +156,24 @@ model BoqItem {
   laborUnitPrice    Decimal  @default(0) @db.Decimal(10, 2)
   quantity          Decimal  @db.Decimal(10, 2) // Total allowed quantity
   isCarport         Boolean  @default(false)
+  boqComponents    BoqItemComponent[]
   
   @@unique([projectId, itemDescription])
+}
+
+model BoqItemComponent {
+  id                Int          @id @default(autoincrement())
+  boqItemId         Int
+  boqItem           BoqItem      @relation(fields: [boqItemId], references: [id], onDelete: Cascade)
+  
+  resourceType      ResourceType
+  name              String
+  quantityFactor    Decimal      @db.Decimal(10, 4) // e.g. 0.02
+  unitRate          Decimal      @db.Decimal(10, 2)
+  totalComponentCost Decimal     @db.Decimal(15, 2)
+  
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 }
 
 // Material Request (MR)

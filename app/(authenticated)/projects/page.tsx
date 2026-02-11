@@ -21,6 +21,8 @@ export default function ProjectsPage() {
         location: '',
         budget: '',
         duration: '',
+        totalFloorArea: '',
+        carportArea: '',
         status: 'ACTIVE'
     });
 
@@ -41,10 +43,12 @@ export default function ProjectsPage() {
         await createProject({
             ...formData,
             clientId: Number(formData.clientId),
-            budget: Number(formData.budget)
+            budget: Number(formData.budget),
+            totalFloorArea: Number(formData.totalFloorArea) || 0,
+            carportArea: Number(formData.carportArea) || 0
         });
         setShowModal(false);
-        setFormData({ name: '', clientId: '', location: '', budget: '', duration: '', status: 'ACTIVE' });
+        setFormData({ name: '', clientId: '', location: '', budget: '', duration: '', totalFloorArea: '', carportArea: '', status: 'ACTIVE' });
         loadData();
     };
 
@@ -131,12 +135,23 @@ export default function ProjectsPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Budget</label>
-                            <input type="number" step="0.01" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} required />
+                            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block tracking-wider">Budget (PhP)</label>
+                            <input type="number" step="0.01" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500" value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} required />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Duration</label>
-                            <input placeholder="e.g. 12 Months" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} />
+                            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block tracking-wider">Duration</label>
+                            <input placeholder="e.g. 180 Days" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white outline-none focus:border-cyan-500" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                        <div>
+                            <label className="text-xs text-cyan-500 uppercase font-bold mb-1 block tracking-wider">Total Floor Area (sqm)</label>
+                            <input type="number" step="0.01" className="w-full bg-cyan-500/5 border border-cyan-500/20 rounded p-2 text-white outline-none focus:border-cyan-500" value={formData.totalFloorArea} onChange={e => setFormData({ ...formData, totalFloorArea: e.target.value })} />
+                        </div>
+                        <div>
+                            <label className="text-xs text-orange-500 uppercase font-bold mb-1 block tracking-wider">Carport Area (sqm)</label>
+                            <input type="number" step="0.01" className="w-full bg-orange-500/5 border border-orange-500/20 rounded p-2 text-white outline-none focus:border-orange-500" value={formData.carportArea} onChange={e => setFormData({ ...formData, carportArea: e.target.value })} />
                         </div>
                     </div>
 

@@ -4,7 +4,7 @@ import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { User } from '@prisma/client';
+import { User } from './generated/client';
 
 async function getUser(email: string): Promise<User | null> {
     try {

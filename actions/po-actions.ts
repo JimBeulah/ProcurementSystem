@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { PoStatus } from '@prisma/client';
+import { serialize } from '@/lib/utils';
 
 export async function getPOs() {
     try {
@@ -10,14 +11,7 @@ export async function getPOs() {
             include: { supplier: true, project: true },
             orderBy: { createdAt: 'desc' }
         });
-        return pos.map(po => ({
-            ...po,
-            totalAmount: Number(po.totalAmount),
-            project: po.project ? {
-                ...po.project,
-                budget: Number(po.project.budget)
-            } : null
-        }));
+        return serialize(pos);
     } catch (e) {
         return [];
     }
@@ -38,20 +32,7 @@ export async function getPO(id: number) {
 
         if (!po) return null;
 
-        return {
-            ...po,
-            totalAmount: Number(po.totalAmount),
-            project: po.project ? {
-                ...po.project,
-                budget: Number(po.project.budget)
-            } : null,
-            items: po.items.map(i => ({
-                ...i,
-                quantity: Number(i.quantity),
-                unitPrice: Number(i.unitPrice),
-                totalPrice: Number(i.totalPrice)
-            }))
-        };
+        return serialize(po);
     } catch (e) {
         return null;
     }

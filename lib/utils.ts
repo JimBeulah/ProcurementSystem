@@ -29,3 +29,8 @@ export function generateEAN13(): string {
 
     return code + checksum;
 }
+
+export function serialize<T>(data: T): T {
+    if (data === null || data === undefined) return data;
+    return JSON.parse(JSON.stringify(data));
+}

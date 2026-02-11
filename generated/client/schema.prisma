@@ -1,0 +1,470 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums for Roles and Statuses
+enum UserRole {
+  ADMIN
+  PROJECT_MANAGER
+  PROCUREMENT_OFFICER
+  ENGINEER
+  FINANCE
+  AUDITOR
+  HEAD_OF_ADMIN // Optional, from previous usage? Keeping generic if needed
+
+  // Legacy/Existing (checking if can be mapped or kept)
+  ENCODER
+  PURCHASER // -> Procurement Officer
+  APPROVER
+  CASH_DISBURSEMENT
+  WAREHOUSE
+  SITE_ENGINEER // -> Engineer
+}
+
+enum PoStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  COMPLETED
+  CANCELLED
+}
+
+enum MrStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PARTIALLY_FULFILLED
+  FULFILLED
+}
+
+enum RfqStatus {
+  OPEN
+  CLOSED
+  AWARDED
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  ONLINE
+}
+
+enum ResourceType {
+  MATERIAL
+  LABOR
+  EQUIPMENT
+}
+
+// Users of the system
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  password  String // Hashed
+  role      UserRole @default(ENCODER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  purchaseOrders   PurchaseOrder[]   @relation("Requester")
+  poApprovals      PurchaseOrder[]   @relation("Approver")
+  materialRequests MaterialRequest[] @relation("MrRequester")
+  mrApprovals      MaterialRequest[] @relation("MrApprover")
+  rfqsCreated      RFQ[]
+  receivedItems    ReceivingReport[]
+  disbursements    Disbursement[]
+  projectMembers   ProjectMember[]
+}
+
+model Company {
+  id       Int     @id @default(autoincrement())
+  name     String
+  address  String?
+  taxId    String?
+  currency String  @default("PHP")
+  logoUrl  String?
+
+  // Business Rules
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Client {
+  id            Int      @id @default(autoincrement())
+  name          String
+  contactPerson String?
+  contractType  String? // Lump Sum, Cost Plus, Unit Price
+  paymentTerms  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  projects Project[]
+}
+
+// Projects (Cost Centers)
+model Project {
+  id        Int      @id @default(autoincrement())
+  clientId  Int?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  name      String
+  location  String?
+  duration  String?
+  budget    Decimal  @db.Decimal(15, 2)
+  status    String   @default("ACTIVE") // ACTIVE, COMPLETED, ON_HOLD
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  totalFloorArea Decimal? @db.Decimal(10, 2)
+  carportArea    Decimal? @db.Decimal(10, 2)
+
+  transactions     FinancialTransaction[]
+  inventory        InventoryItem[]
+  teamMembers      ProjectMember[]
+  boqItems         BoqItem[]
+  purchaseOrders   PurchaseOrder[]
+  materialRequests MaterialRequest[]
+}
+
+model ProjectMember {
+  id        Int     @id @default(autoincrement())
+  projectId Int
+  project   Project @relation(fields: [projectId], references: [id])
+  userId    Int
+  user      User    @relation(fields: [userId], references: [id])
+  role      String // e.g. Project Manager, Site Engineer
+
+  assignedAt DateTime @default(now())
+}
+
+// BOQ - Bill of Quantities (Budget Limit per project)
+model BoqItem {
+  id                Int                @id @default(autoincrement())
+  projectId         Int
+  project           Project            @relation(fields: [projectId], references: [id])
+  itemDescription   String
+  unit              String // pcs, kg, bags
+  materialUnitPrice Decimal            @db.Decimal(10, 2)
+  laborUnitPrice    Decimal            @default(0) @db.Decimal(10, 2)
+  quantity          Decimal            @db.Decimal(10, 2) // Total allowed quantity
+  isCarport         Boolean            @default(false)
+  boqComponents     BoqItemComponent[]
+
+  @@unique([projectId, itemDescription])
+}
+
+model BoqItemComponent {
+  id        Int     @id @default(autoincrement())
+  boqItemId Int
+  boqItem   BoqItem @relation(fields: [boqItemId], references: [id], onDelete: Cascade)
+
+  resourceType       ResourceType
+  name               String
+  quantityFactor     Decimal      @db.Decimal(10, 4) // e.g. 0.02
+  unitRate           Decimal      @db.Decimal(10, 2)
+  totalComponentCost Decimal      @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Material Request (MR)
+model MaterialRequest {
+  id        Int     @id @default(autoincrement())
+  projectId Int
+  project   Project @relation(fields: [projectId], references: [id])
+
+  requesterId Int
+  requester   User @relation("MrRequester", fields: [requesterId], references: [id])
+
+  approverId Int?
+  approver   User? @relation("MrApprover", fields: [approverId], references: [id])
+
+  requestDate DateTime @default(now())
+  status      MrStatus @default(PENDING)
+  remarks     String?
+
+  items MaterialRequestItem[]
+  rfqs  RFQ[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MaterialRequestItem {
+  id                Int             @id @default(autoincrement())
+  materialRequestId Int
+  materialRequest   MaterialRequest @relation(fields: [materialRequestId], references: [id])
+
+  itemDescription   String
+  description       String?
+  quantity          Decimal @db.Decimal(10, 2)
+  materialUnitPrice Decimal @default(0) @db.Decimal(10, 2)
+  laborUnitPrice    Decimal @default(0) @db.Decimal(10, 2)
+  unit              String
+}
+
+// Request for Quotation (RFQ)
+model RFQ {
+  id              Int              @id @default(autoincrement())
+  mrId            Int? // Can be linked to an MR or standalone
+  materialRequest MaterialRequest? @relation(fields: [mrId], references: [id])
+
+  createdById Int
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  title   String
+  status  RfqStatus @default(OPEN)
+  dueDate DateTime?
+
+  items      RFQItem[]
+  quotations SupplierQuotation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RFQItem {
+  id    Int @id @default(autoincrement())
+  rfqId Int
+  rfq   RFQ @relation(fields: [rfqId], references: [id])
+
+  materialName String
+  quantity     Decimal @db.Decimal(10, 2)
+  unit         String
+}
+
+// Suppliers & Quotations
+model Supplier {
+  id            Int     @id @default(autoincrement())
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  rating        Int?
+
+  quotations     SupplierQuotation[]
+  purchaseOrders PurchaseOrder[]
+  invoices       SupplierInvoice[]
+}
+
+model Material {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique
+  name        String
+  description String?
+  unit        String
+  category    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Unit {
+  id           Int    @id @default(autoincrement())
+  name         String // e.g. Pieces, Kilograms
+  abbreviation String @unique // e.g. PCS, KG
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Warehouse {
+  id       Int     @id @default(autoincrement())
+  name     String
+  location String?
+  type     String  @default("CENTRAL")
+
+  inventory InventoryItem[]
+}
+
+model SupplierQuotation {
+  id         Int      @id @default(autoincrement())
+  rfqId      Int
+  rfq        RFQ      @relation(fields: [rfqId], references: [id])
+  supplierId Int
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  quoteDate   DateTime @default(now())
+  totalAmount Decimal  @default(0) @db.Decimal(15, 2)
+  currency    String   @default("PHP")
+  isSelected  Boolean  @default(false)
+
+  items QuotationItem[]
+}
+
+model QuotationItem {
+  id                  Int               @id @default(autoincrement())
+  supplierQuotationId Int
+  supplierQuotation   SupplierQuotation @relation(fields: [supplierQuotationId], references: [id])
+
+  materialName String
+  quantity     Decimal @db.Decimal(10, 2)
+  unitPrice    Decimal @db.Decimal(10, 2)
+  totalPrice   Decimal @db.Decimal(10, 2)
+  remarks      String?
+}
+
+// Purchase Order
+model PurchaseOrder {
+  id        Int      @id @default(autoincrement())
+  orderDate DateTime @default(now())
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+
+  supplierId Int?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
+  requesterId Int
+  requester   User @relation("Requester", fields: [requesterId], references: [id])
+
+  approverId Int?
+  approver   User? @relation("Approver", fields: [approverId], references: [id])
+
+  status      PoStatus @default(PENDING)
+  remarks     String?
+  totalAmount Decimal  @default(0) @db.Decimal(15, 2)
+
+  items         PurchaseOrderItem[]
+  receiving     ReceivingReport[]
+  invoices      SupplierInvoice[]
+  disbursements Disbursement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PurchaseOrderItem {
+  id              Int           @id @default(autoincrement())
+  purchaseOrderId Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  materialName String
+  description  String?
+  quantity     Decimal @db.Decimal(10, 2)
+  unit         String
+  unitPrice    Decimal @db.Decimal(10, 2)
+  totalPrice   Decimal @db.Decimal(10, 2)
+}
+
+// Delivery & Inventory
+model ReceivingReport {
+  id              Int           @id @default(autoincrement())
+  purchaseOrderId Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  receivedById Int
+  receivedBy   User @relation(fields: [receivedById], references: [id])
+
+  receivedDate   DateTime @default(now())
+  deliveryNoteNo String?
+  notes          String?
+
+  items    ReceivingItem[]
+  invoices SupplierInvoice[] // Linked for 3-way match
+}
+
+model ReceivingItem {
+  id                Int             @id @default(autoincrement())
+  receivingReportId Int
+  receivingReport   ReceivingReport @relation(fields: [receivingReportId], references: [id])
+
+  materialName     String
+  quantityReceived Decimal @db.Decimal(10, 2)
+  status           String  @default("GOOD") // GOOD, DAMAGED, WRONG_ITEM
+}
+
+model InventoryItem {
+  id           Int      @id @default(autoincrement())
+  materialName String
+  projectId    Int? // Project specific stock
+  project      Project? @relation(fields: [projectId], references: [id])
+
+  warehouseId Int?
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
+
+  quantity    Decimal  @db.Decimal(10, 2)
+  unit        String
+  lastUpdated DateTime @updatedAt
+}
+
+model WorkflowRule {
+  id           Int      @id @default(autoincrement())
+  processType  String // PO, RFQ, PAYMENT
+  minAmount    Decimal  @default(0) @db.Decimal(15, 2)
+  maxAmount    Decimal? @db.Decimal(15, 2) // null means unlimited
+  approverRole UserRole
+  stepOrder    Int      @default(1) // Sequence of approval if multiple needed
+
+  updatedAt DateTime @updatedAt
+}
+
+// Finance & Payment
+model SupplierInvoice {
+  id            Int      @id @default(autoincrement())
+  invoiceNumber String
+  invoiceDate   DateTime
+
+  supplierId Int
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  purchaseOrderId Int?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+
+  receivingReportId Int?
+  receivingReport   ReceivingReport? @relation(fields: [receivingReportId], references: [id])
+
+  totalAmount Decimal @db.Decimal(15, 2)
+  status      String  @default("PENDING") // PENDING, MATCHED, PAID
+
+  createdAt DateTime @default(now())
+}
+
+model Disbursement {
+  id              Int            @id @default(autoincrement())
+  purchaseOrderId Int?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+
+  processedById Int
+  processedBy   User @relation(fields: [processedById], references: [id])
+
+  amount          Decimal       @db.Decimal(15, 2)
+  paymentDate     DateTime      @default(now())
+  method          PaymentMethod
+  referenceNumber String?
+
+  status String @default("RELEASED") // RELEASED, CLEARED
+}
+
+model FinancialTransaction {
+  id        Int      @id @default(autoincrement())
+  projectId Int?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  date        DateTime @default(now())
+  type        String // INCOME, EXPENSE
+  category    String
+  description String?
+  amount      Decimal  @db.Decimal(15, 2)
+
+  reference String?
+  metadata  Json?
+}

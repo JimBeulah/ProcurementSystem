@@ -1,23 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
-import { ClipboardList, Plus, Save, RefreshCcw, Upload, FileDown, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect, use, useCallback } from 'react';
+import { ClipboardList, Plus, Save, RefreshCcw, Upload, FileDown, Search, LayoutGrid, Home, Car, TrendingUp, ChevronDown, ChevronRight, Calculator, Trash2, Hammer, Settings } from 'lucide-react';
 import { getProjectBoq, createBoqItem, bulkCreateBoqItems } from '@/actions/boq-actions';
 import { getMaterials } from '@/actions/master-data-actions';
 import { getUnits } from '@/actions/unit-actions';
 import { getProject, updateProjectAreas } from '@/actions/project-actions';
-import { LayoutGrid, Home, Car } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
 
 interface BoqPageProps {
     params: Promise<{ id: string }>;
 }
 
 export default function ProjectBoqPage({ params }: BoqPageProps) {
-    // Correctly unwrap params using React.use() if necessary in Next.js 15+, but for now treating as async prop or params access
-    // If params is a Promise in newer Next.js versions, we must await it. 
-    // Assuming standard Next.js 14/15 behavior where params is available.
-
-    // Safety check for ID
     const { id } = use(params);
     const projectId = parseInt(id);
 
@@ -27,7 +22,7 @@ export default function ProjectBoqPage({ params }: BoqPageProps) {
     const [units, setUnits] = useState<any[]>([]);
     const [project, setProject] = useState<any>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isFormOpen, setIsFormOpen] = useState(true);
+    const [isFormOpen, setIsFormOpen] = useState(false);
 
     // Add Form
     const [newItem, setNewItem] = useState({
@@ -36,14 +31,12 @@ export default function ProjectBoqPage({ params }: BoqPageProps) {
         materialUnitPrice: 0,
         laborUnitPrice: 0,
         quantity: 0,
-        isCarport: false
+        isCarport: false,
+        components: [] as any[]
     });
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
-    useEffect(() => {
-        loadData();
-    }, [projectId]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         const [boqData, matData, unitData, projectData] = await Promise.all([
             getProjectBoq(projectId),
@@ -56,39 +49,42 @@ export default function ProjectBoqPage({ params }: BoqPageProps) {
         setUnits(unitData);
         setProject(projectData);
         setLoading(false);
-    };
+    }, [projectId]);
 
-    const handleMaterialSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const mat = materials.find(m => m.name === e.target.value);
-        if (mat) {
-            setNewItem({
-                ...newItem,
-                itemDescription: mat.name,
-                unit: mat.unit
-            });
-        } else {
-            setNewItem({ ...newItem, itemDescription: e.target.value });
-        }
-    };
+    useEffect(() => {
+        console.log('[CLIENT] BOQ Items Updated:', items.length);
+    }, [items]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
-        await createBoqItem({
+        const res = await createBoqItem({
             projectId,
-            ...newItem,
-            materialUnitPrice: Number(newItem.materialUnitPrice),
-            laborUnitPrice: Number(newItem.laborUnitPrice),
-            quantity: Number(newItem.quantity)
+            itemDescription: newItem.itemDescription,
+            unit: newItem.unit,
+            quantity: Number(newItem.quantity),
+            isCarport: newItem.isCarport,
+            components: newItem.components
         });
-        setNewItem({
-            itemDescription: '',
-            unit: '',
-            materialUnitPrice: 0,
-            laborUnitPrice: 0,
-            quantity: 0,
-            isCarport: false
-        });
-        loadData();
+
+        if (res.success) {
+            setNewItem({
+                itemDescription: '',
+                unit: '',
+                materialUnitPrice: 0,
+                laborUnitPrice: 0,
+                quantity: 0,
+                isCarport: false,
+                components: []
+            });
+            setIsFormOpen(false);
+            loadData();
+        } else {
+            alert("Error adding item: " + res.error);
+        }
     };
 
     const handleUpdateAreas = async (floorArea: number, carportArea: number) => {
@@ -100,22 +96,54 @@ export default function ProjectBoqPage({ params }: BoqPageProps) {
         }
     };
 
+    const addComponent = () => {
+        setNewItem(prev => ({
+            ...prev,
+            components: [...prev.components, { resourceType: 'MATERIAL', name: '', quantityFactor: 0, unitRate: 0 }]
+        }));
+    };
+
+    const removeComponent = (index: number) => {
+        setNewItem(prev => ({
+            ...prev,
+            components: prev.components.filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateComponent = (index: number, field: string, value: any) => {
+        const newComponents = [...newItem.components];
+        newComponents[index] = { ...newComponents[index], [field]: value };
+
+        // Recalculate parent costs
+        const matCosts = newComponents
+            .filter(c => c.resourceType === 'MATERIAL')
+            .reduce((sum, c) => sum + (Number(c.quantityFactor) * Number(c.unitRate)), 0);
+        const labCosts = newComponents
+            .filter(c => c.resourceType === 'LABOR' || c.resourceType === 'EQUIPMENT')
+            .reduce((sum, c) => sum + (Number(c.quantityFactor) * Number(c.unitRate)), 0);
+
+        setNewItem(prev => ({
+            ...prev,
+            components: newComponents,
+            materialUnitPrice: matCosts,
+            laborUnitPrice: labCosts
+        }));
+    };
+
     const totalMaterialCost = items.reduce((sum, item) => sum + (Number(item.materialUnitPrice) * Number(item.quantity)), 0);
     const totalLaborCost = items.reduce((sum, item) => sum + (Number(item.laborUnitPrice || 0) * Number(item.quantity)), 0);
-    const totalMaterialUnitCost = items.reduce((sum, item) => sum + Number(item.materialUnitPrice), 0);
-    const totalLaborUnitCost = items.reduce((sum, item) => sum + Number(item.laborUnitPrice || 0), 0);
     const totalConstructionCost = totalMaterialCost + totalLaborCost;
 
-    // Area Metrics Calculations (Including 10% profit)
     const baseCarportAmount = items.filter(i => i.isCarport).reduce((sum, i) => sum + ((Number(i.materialUnitPrice) + Number(i.laborUnitPrice || 0)) * Number(i.quantity)), 0);
-    const amountOfCarport = baseCarportAmount * 1.1;
-    const amountWithoutCarport = (totalConstructionCost * 1.1) - amountOfCarport;
+    const amountOfCarportWithProfit = baseCarportAmount * 1.1;
+    const totalWithProfit = totalConstructionCost * 1.1;
+    const amountWithoutCarportWithProfit = totalWithProfit - amountOfCarportWithProfit;
 
     const floorArea = project?.totalFloorArea || 0;
     const carportArea = project?.carportArea || 0;
 
-    const amountPerSqmBuilding = floorArea > 0 ? amountWithoutCarport / floorArea : 0;
-    const amountPerSqmCarport = carportArea > 0 ? amountOfCarport / carportArea : 0;
+    const amountPerSqmBuilding = floorArea > 0 ? amountWithoutCarportWithProfit / floorArea : 0;
+    const amountPerSqmCarport = carportArea > 0 ? amountOfCarportWithProfit / carportArea : 0;
 
     const downloadTemplate = () => {
         const headers = ['NO', 'ITEM DESCRIPTION', 'UNIT', 'QUANTITY', 'MATERIAL UNIT COST', 'MATERIAL TOTAL COST', 'LABOR UNIT COST', 'LABOR TOTAL COST'];
@@ -139,20 +167,12 @@ export default function ProjectBoqPage({ params }: BoqPageProps) {
 
         const reader = new FileReader();
         reader.onload = async (event) => {
-            // Remove UTF-8 BOM if present
             const text = (event.target?.result as string).replace(/^\uFEFF/, '');
-            if (!text) {
-                alert("File is empty");
-                return;
-            }
+            if (!text) return;
 
             const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-            if (lines.length < 2) {
-                alert("CSV must contain at least a header and one data row.");
-                return;
-            }
+            if (lines.length < 2) return;
 
-            // Detect delimiter (comma or semicolon)
             const firstLine = lines[0];
             const delimiter = firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',';
 
@@ -184,21 +204,14 @@ export default function ProjectBoqPage({ params }: BoqPageProps) {
                 });
 
                 const qty = parseFloat(String(row['QUANTITY'] || '1').replace(/,/g, '')) || 1;
-
-                // Flexible header matching - prioritize ITEM DESCRIPTION but fallback to name
-                // Also ensure we don't accidentally pick up the "NO" column value if it's numeric
                 let rawName = row['ITEM DESCRIPTION'] || row['DESCRIPTION'] || row['ITEM'] || row['MATERIAL NAME'] || '';
-
-                // If the picked rawName is just a number (like an index 1, 2, 3) or empty, look for a text candidate
                 const isNumeric = (val: string) => !val || (!isNaN(Number(val)) && String(val).length < 6);
 
                 if (isNumeric(rawName)) {
-                    // Try to find the first non-numeric value that contains letters in the row
                     const textCandidate = values.find(v => v && /[a-zA-Z]/.test(String(v)));
                     if (textCandidate) rawName = textCandidate;
                 }
 
-                // Smart mapping based on Excel headers (handling commas in numbers)
                 const matUnit = parseFloat(String(row['MATERIAL UNIT COST'] || '0').replace(/,/g, ''));
                 const matTotal = parseFloat(String(row['MATERIAL TOTAL COST'] || '0').replace(/,/g, ''));
                 const finalMatUnit = isNaN(matUnit) || matUnit === 0 ? (qty > 0 ? matTotal / qty : 0) : matUnit;
@@ -221,18 +234,19 @@ export default function ProjectBoqPage({ params }: BoqPageProps) {
                 const res = await bulkCreateBoqItems(projectId, data);
                 if (res.success) {
                     loadData();
-                    alert(`Successfully imported ${data.length} items.`);
-                } else {
-                    alert(`Failed to import: ${res.error}`);
                 }
                 setLoading(false);
-            } else {
-                alert(`No valid items found. Headers found: ${csvHeaders.join(', ')}. Ensure 'ITEM DESCRIPTION' is one of them.`);
             }
         };
-        reader.onerror = () => alert("Error reading file.");
         reader.readAsText(file);
         e.target.value = '';
+    };
+
+    const toggleRow = (id: number) => {
+        const newExpanded = new Set(expandedRows);
+        if (newExpanded.has(id)) newExpanded.delete(id);
+        else newExpanded.add(id);
+        setExpandedRows(newExpanded);
     };
 
     const filteredItems = items.filter(item =>
@@ -240,91 +254,157 @@ export default function ProjectBoqPage({ params }: BoqPageProps) {
     );
 
     return (
-        <div className="p-6 space-y-6">
-            <header className="pb-6 border-b border-white/5">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-                    <ClipboardList className="text-orange-500" /> Bill of Quantities (BOQ)
-                </h1>
-                <p className="text-slate-400">Define project material, labor requirements and budget limits.</p>
-                <div className="flex items-center gap-3 mt-4">
-                    <div className="relative group flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-500 transition-colors" size={16} />
+        <div className="p-4 space-y-4 max-h-[calc(100vh-64px)] overflow-y-auto custom-scrollbar">
+            {/* Condensed Header */}
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0a0a0f]/50 backdrop-blur-md p-4 rounded-xl border border-white/5 sticky top-0 z-20">
+                <div>
+                    <h1 className="text-[clamp(1.25rem,5vw,1.5rem)] font-bold text-white flex items-center gap-2">
+                        <ClipboardList className="text-orange-500" size={24} /> BOQ Management
+                    </h1>
+                    <p className="text-[clamp(0.6rem,2vw,0.7rem)] text-slate-400 uppercase tracking-[0.2em] font-black opacity-60">Project Reference ID: #{projectId}</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <div className="relative group max-w-xs">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-500 transition-colors" size={14} />
                         <input
                             type="text"
-                            placeholder="Find BOQ items..."
-                            className="w-full bg-black/40 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white text-sm focus:border-cyan-500/50 outline-none transition-all"
+                            placeholder="Search items..."
+                            className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-white text-xs focus:border-cyan-500/50 outline-none transition-all"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                         />
                     </div>
 
-                    <div className="flex items-center gap-2 border-l border-white/5 pl-3">
-                        <button
-                            onClick={loadData}
-                            disabled={loading}
-                            className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-xs"
-                            title="Refresh Data"
-                        >
+                    <button onClick={() => setIsFormOpen(true)} className="bg-orange-600 hover:bg-orange-500 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all shadow-lg shadow-orange-600/20 active:scale-95">
+                        <Plus size={16} /> <span>Add Item</span>
+                    </button>
+
+                    <div className="h-6 w-px bg-white/10 mx-1" />
+
+                    <div className="flex items-center gap-1">
+                        <button onClick={loadData} disabled={loading} className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors" title="Refresh">
                             <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
-                            <span className="hidden sm:inline">Refresh</span>
                         </button>
-
-                        <button
-                            onClick={downloadTemplate}
-                            className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 text-xs"
-                            title="Download CSV Template"
-                        >
+                        <button onClick={downloadTemplate} className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors" title="Template">
                             <FileDown size={16} />
-                            <span className="hidden sm:inline">Template</span>
                         </button>
-
-                        <label className="bg-cyan-600/10 hover:bg-cyan-600/20 border border-cyan-500/30 text-cyan-400 px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-all text-xs font-bold uppercase tracking-wider">
+                        <label className="p-1.5 text-cyan-400 hover:bg-cyan-400/10 rounded-lg cursor-pointer transition-colors" title="Bulk Upload">
                             <Upload size={16} />
-                            <span>Bulk Upload</span>
-                            <input
-                                type="file"
-                                accept=".csv"
-                                className="hidden"
-                                onChange={handleBulkUpload}
-                                disabled={loading}
-                            />
+                            <input type="file" accept=".csv" className="hidden" onChange={handleBulkUpload} disabled={loading} />
                         </label>
                     </div>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-                {/* BOQ List */}
-                <div className="xl:col-span-3 bg-[#0a0a0f] border border-white/5 rounded-xl overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-slate-400 border-collapse">
-                            <thead className="bg-white/5 text-slate-200 uppercase text-[9px] font-bold">
-                                <tr className="border-b border-white/10">
-                                    <th className="p-3 border-r border-white/10 text-center w-12">No</th>
-                                    <th className="p-3 border-r border-white/10 min-w-[200px]">Item Description</th>
-                                    <th className="p-3 border-r border-white/10 text-center">Unit</th>
-                                    <th className="p-3 border-r border-white/10 text-center">Quantity</th>
-                                    <th className="p-3 border-r border-white/10 text-right">Material Unit Cost</th>
-                                    <th className="p-3 border-r border-white/10 text-right">Material Total Cost</th>
-                                    <th className="p-3 border-r border-white/10 text-right">Labor Unit Cost</th>
-                                    <th className="p-3 border-r border-white/10 text-right">Labor Total Cost</th>
-                                    <th className="p-3 text-right">Total Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5 text-xs">
-                                {filteredItems.map((item, idx) => {
-                                    const matTotal = Number(item.materialUnitPrice) * Number(item.quantity);
-                                    const laborTotal = (Number(item.laborUnitPrice) || 0) * Number(item.quantity);
-                                    const rowTotal = matTotal + laborTotal;
+            {/* Top Dashboard Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* Total Cost Card */}
+                <div className="bg-gradient-to-br from-[#1a1a20] to-[#0a0a0f] border border-white/10 rounded-xl p-4 flex items-center gap-4 group hover:border-orange-500/30 transition-all">
+                    <div className="p-3 rounded-lg bg-orange-500/10 text-orange-500 group-hover:scale-110 transition-transform">
+                        <TrendingUp size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[clamp(0.55rem,1.5vw,0.65rem)] text-slate-500 uppercase font-black tracking-wider">Total Project Cost (+10%)</p>
+                        <p className="text-[clamp(1.25rem,4vw,1.5rem)] font-black text-white font-mono tracking-tighter leading-none">
+                            ₱ {totalWithProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                    </div>
+                </div>
 
-                                    return (
-                                        <tr key={item.id} className="hover:bg-white/5">
-                                            <td className="p-3 border-r border-white/5 text-center text-[10px] text-slate-500 font-mono">
-                                                {idx + 1}
+                {/* Building Metric Card */}
+                <div className="bg-gradient-to-br from-[#1a1a20] to-[#0a0a0f] border border-white/10 rounded-xl p-4 flex flex-col gap-2 group hover:border-cyan-500/30 transition-all">
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-500 uppercase font-black">Building Metrics</span>
+                        <Home size={14} className="text-cyan-500" />
+                    </div>
+                    <div className="flex justify-between items-end">
+                        <p className="text-lg font-black text-white font-mono">₱ {amountPerSqmBuilding.toLocaleString(undefined, { minimumFractionDigits: 0 })}<span className="text-[10px] text-slate-400">/sqm</span></p>
+                        <div className="text-right">
+                            <input
+                                type="number"
+                                className="bg-transparent border-b border-white/10 w-12 text-right text-xs text-cyan-400 font-mono focus:border-cyan-500 outline-none"
+                                defaultValue={floorArea}
+                                onBlur={(e) => handleUpdateAreas(parseFloat(e.target.value) || 0, project?.carportArea || 0)}
+                            />
+                            <span className="text-[10px] text-slate-500 ml-1">sqm</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Carport Metric Card */}
+                <div className="bg-gradient-to-br from-[#1a1a20] to-[#0a0a0f] border border-white/10 rounded-xl p-4 flex flex-col gap-2 group hover:border-orange-500/30 transition-all">
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-500 uppercase font-black">Carport Metrics</span>
+                        <Car size={14} className="text-orange-500" />
+                    </div>
+                    <div className="flex justify-between items-end">
+                        <p className="text-lg font-black text-white font-mono">₱ {amountPerSqmCarport.toLocaleString(undefined, { minimumFractionDigits: 0 })}<span className="text-[10px] text-slate-400">/sqm</span></p>
+                        <div className="text-right">
+                            <input
+                                type="number"
+                                className="bg-transparent border-b border-white/10 w-12 text-right text-xs text-orange-400 font-mono focus:border-orange-500 outline-none"
+                                defaultValue={carportArea}
+                                onBlur={(e) => handleUpdateAreas(project?.totalFloorArea || 0, parseFloat(e.target.value) || 0)}
+                            />
+                            <span className="text-[10px] text-slate-500 ml-1">sqm</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Progress/Ratio Card */}
+                <div className="bg-gradient-to-br from-[#1a1a20] to-[#0a0a0f] border border-white/10 rounded-xl p-4 flex flex-col justify-between group hover:border-emerald-500/30 transition-all">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] text-slate-500 uppercase font-black">Cost Distribution</span>
+                        <span className="text-[9px] font-bold text-emerald-400">{((amountWithoutCarportWithProfit / totalWithProfit) * 100 || 0).toFixed(0)}% Building</span>
+                    </div>
+                    <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden flex">
+                        <div className="bg-cyan-500 h-full" style={{ width: `${(amountWithoutCarportWithProfit / totalWithProfit) * 100 || 0}%` }} />
+                        <div className="bg-orange-500 h-full" style={{ width: `${(amountOfCarportWithProfit / totalWithProfit) * 100 || 0}%` }} />
+                    </div>
+                    <div className="flex justify-between text-[8px] mt-1 text-slate-500 font-bold">
+                        <span>₱ {(totalMaterialCost * 1.1).toLocaleString(undefined, { maximumFractionDigits: 0 })} Materials</span>
+                        <span>₱ {(totalLaborCost * 1.1).toLocaleString(undefined, { maximumFractionDigits: 0 })} Labor</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content - Table */}
+            <div className="bg-[#0a0a0f] border border-white/5 rounded-xl overflow-hidden shadow-2xl">
+                <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)] custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-[#1a1a20] text-slate-400 uppercase text-[9px] font-black tracking-widest sticky top-0 z-10 shadow-lg">
+                            <tr className="border-b border-white/10">
+                                <th className="p-2 border-r border-white/5 text-center w-10">No</th>
+                                <th className="p-2 border-r border-white/5 min-w-[250px]">Description</th>
+                                <th className="p-2 border-r border-white/5 text-center w-16">Unit</th>
+                                <th className="p-2 border-r border-white/5 text-center w-20">Qty</th>
+                                <th className="p-2 border-r border-white/5 text-right w-32">Mat. Unit</th>
+                                <th className="p-2 border-r border-white/5 text-right w-36 text-cyan-400/80">Mat. Total</th>
+                                <th className="p-2 border-r border-white/5 text-right w-32">Lab. Unit</th>
+                                <th className="p-2 border-r border-white/5 text-right w-36 text-purple-400/80">Lab. Total</th>
+                                <th className="p-2 text-right w-40 text-emerald-400 bg-emerald-500/5">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5 text-[11px]">
+                            {filteredItems.map((item, idx) => {
+                                const matTotal = Number(item.materialUnitPrice) * Number(item.quantity);
+                                const laborTotal = (Number(item.laborUnitPrice) || 0) * Number(item.quantity);
+                                const rowTotal = matTotal + laborTotal;
+                                const isExpanded = expandedRows.has(item.id);
+
+                                return (
+                                    <React.Fragment key={item.id}>
+                                        <tr className="hover:bg-white/5 group transition-colors cursor-pointer" onClick={() => toggleRow(item.id)}>
+                                            <td className="p-2 border-r border-white/5 text-center text-[10px] text-slate-500 font-mono">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    {isExpanded ? <ChevronDown size={12} className="text-orange-500" /> : <ChevronRight size={12} />}
+                                                    {idx + 1}
+                                                </div>
                                             </td>
-                                            <td className="p-3 border-r border-white/5">
+                                            <td className="p-2 border-r border-white/5">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="font-medium text-white">{item.itemDescription}</div>
+                                                    <div className="font-medium text-slate-200 group-hover:text-white uppercase">{item.itemDescription}</div>
                                                     {item.isCarport && (
                                                         <span className="text-[8px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1 rounded flex items-center gap-1 uppercase font-bold">
                                                             <Car size={10} /> Carport
@@ -332,310 +412,269 @@ export default function ProjectBoqPage({ params }: BoqPageProps) {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="p-3 border-r border-white/5 text-center">{item.unit}</td>
-                                            <td className="p-3 border-r border-white/5 text-center font-mono text-cyan-400">{item.quantity}</td>
-                                            <td className="p-3 border-r border-white/5 text-right font-mono italic">
+                                            <td className="p-2 border-r border-white/5 text-center text-slate-500">{item.unit}</td>
+                                            <td className="p-2 border-r border-white/5 text-center font-bold text-cyan-400/70">{item.quantity}</td>
+                                            <td className="p-2 border-r border-white/5 text-right font-mono text-slate-400 italic">
                                                 {Number(item.materialUnitPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </td>
-                                            <td className="p-3 border-r border-white/5 text-right font-mono">
+                                            <td className="p-2 border-r border-white/5 text-right font-mono text-cyan-400/90 font-bold bg-cyan-400/5">
                                                 {matTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </td>
-                                            <td className="p-3 border-r border-white/5 text-right font-mono italic text-slate-500">
+                                            <td className="p-2 border-r border-white/5 text-right font-mono text-slate-500 italic">
                                                 {Number(item.laborUnitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </td>
-                                            <td className="p-3 border-r border-white/5 text-right font-mono text-slate-500">
+                                            <td className="p-2 border-r border-white/5 text-right font-mono text-purple-400/70 bg-purple-400/5">
                                                 {laborTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </td>
-                                            <td className="p-3 text-right font-mono text-emerald-400 font-bold">
+                                            <td className="p-2 text-right font-mono text-emerald-400 font-black bg-emerald-500/5 group-hover:bg-emerald-500/10">
                                                 {rowTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                             </td>
                                         </tr>
-                                    );
-                                })}
-                                {items.length === 0 && !loading && (
-                                    <tr>
-                                        <td colSpan={9} className="p-8 text-center opacity-50">No BOQ items defined yet.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                            <tfoot className="border-t-2 border-white/10 bg-white/5 font-bold text-white text-xs">
-                                <tr className="border-b border-white/5 text-[10px] text-slate-400">
-                                    <td colSpan={4} className="p-3 text-right border-r border-white/5">SUMMARY TOTALS</td>
-                                    <td className="p-3 text-right border-r border-white/5 font-mono text-cyan-500/50 italic">
-                                        {totalMaterialUnitCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="p-3 text-right border-r border-white/5 font-mono text-cyan-400">
-                                        {totalMaterialCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="p-3 text-right border-r border-white/5 font-mono text-purple-500/50 italic">
-                                        {totalLaborUnitCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="p-3 text-right border-r border-white/5 font-mono text-purple-400">
-                                        {totalLaborCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="p-3 text-right font-mono text-emerald-400">
-                                        {totalConstructionCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </td>
-                                </tr>
+                                        {isExpanded && item.boqComponents && item.boqComponents.length > 0 && (
+                                            <tr className="bg-black/40">
+                                                <td colSpan={9} className="p-0">
+                                                    <div className="p-4 pl-12 border-l-2 border-orange-500/50 space-y-2">
+                                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                            <Calculator size={10} /> Detailed Unit Price Analysis (DUPA)
+                                                        </p>
+                                                        <table className="w-full text-[10px] border-collapse bg-white/5 rounded-lg overflow-hidden">
+                                                            <thead className="bg-white/5 text-slate-500 uppercase font-bold tracking-wider">
+                                                                <tr>
+                                                                    <th className="p-2 text-left pl-4">Type</th>
+                                                                    <th className="p-2 text-left">Resource Name</th>
+                                                                    <th className="p-2 text-center">Factor</th>
+                                                                    <th className="p-2 text-right">Unit Rate</th>
+                                                                    <th className="p-2 text-right pr-4">Cost/Unit</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-white/5">
+                                                                {item.boqComponents.map((comp: any) => (
+                                                                    <tr key={comp.id} className="hover:bg-white/5">
+                                                                        <td className="p-2 pl-4">
+                                                                            <span className={`px-1.5 py-0.5 rounded-[4px] text-[8px] font-black uppercase ${comp.resourceType === 'MATERIAL' ? 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/20' :
+                                                                                comp.resourceType === 'LABOR' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' :
+                                                                                    'bg-orange-500/10 text-orange-500 border border-orange-500/20'
+                                                                                }`}>
+                                                                                {comp.resourceType}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="p-2 text-slate-300">{comp.name}</td>
+                                                                        <td className="p-2 text-center font-mono text-slate-500">{Number(comp.quantityFactor).toFixed(4)}</td>
+                                                                        <td className="p-2 text-right font-mono text-slate-500">₱ {Number(comp.unitRate).toLocaleString()}</td>
+                                                                        <td className="p-2 text-right pr-4 font-mono font-bold text-white">₱ {Number(comp.totalComponentCost).toLocaleString()}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                            {items.length === 0 && !loading && (
                                 <tr>
-                                    <td colSpan={8} className="p-4 text-right border-r border-white/5 uppercase tracking-wider text-slate-400">Total Construction Cost</td>
-                                    <td className="p-4 text-right text-emerald-400 border-b border-white/5 text-sm">
-                                        {totalConstructionCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </td>
+                                    <td colSpan={9} className="p-12 text-center opacity-30 text-xs uppercase tracking-widest">No items found in BOQ</td>
                                 </tr>
-                                <tr className="bg-orange-600/10">
-                                    <td colSpan={8} className="p-4 text-right border-r border-white/5 text-orange-400 uppercase tracking-wider">
-                                        Total Construction Cost (+ 10% profit)
-                                    </td>
-                                    <td className="p-4 text-right text-orange-400 font-black text-sm">
-                                        {(totalConstructionCost * 1.1).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Add Item Form */}
-                <div className="bg-[#1a1a20] rounded-xl border border-white/10 h-fit overflow-hidden transition-all duration-300">
-                    <button
-                        onClick={() => setIsFormOpen(!isFormOpen)}
-                        className="w-full p-6 text-left hover:bg-white/5 transition-colors flex items-center justify-between"
-                    >
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                            <Plus size={18} className="text-orange-500" /> Add Item
-                        </h2>
-                        {isFormOpen ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
-                    </button>
-
-                    {isFormOpen && (
-                        <div className="p-6 pt-0">
-                            <form onSubmit={handleAdd} className="space-y-4">
-                                <div>
-                                    <label className="text-[10px] text-slate-400 uppercase font-bold mb-1 block">Item Description</label>
-                                    <input
-                                        list="material-suggestions"
-                                        className="w-full bg-black/20 border border-white/10 rounded p-2 text-white text-sm"
-                                        value={newItem.itemDescription}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            const mat = materials.find(m => m.name === val);
-                                            if (mat) {
-                                                setNewItem({ ...newItem, itemDescription: mat.name, unit: mat.unit });
-                                            } else {
-                                                setNewItem({ ...newItem, itemDescription: val });
-                                            }
-                                        }}
-                                        required
-                                        placeholder="Type description or select..."
-                                    />
-                                    <datalist id="material-suggestions">
-                                        {materials.map(m => <option key={m.id} value={m.name} />)}
-                                    </datalist>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-[10px] text-slate-400 uppercase font-bold mb-1 block">Quantity</label>
-                                        <input type="number" step="0.01" className="w-full bg-black/20 border border-white/10 rounded p-2 text-white text-sm" value={newItem.quantity || ''} onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) })} required />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-400 uppercase font-bold mb-1 block">Classification</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setNewItem({ ...newItem, isCarport: !newItem.isCarport })}
-                                            className={`flex-1 flex items-center justify-center gap-2 rounded border transition-all text-[10px] font-bold uppercase tracking-wider h-[38px] ${newItem.isCarport
-                                                ? 'bg-orange-500/20 border-orange-500 text-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.2)]'
-                                                : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-                                                }`}
-                                        >
-                                            {newItem.isCarport ? <Car size={14} /> : <Home size={14} />}
-                                            {newItem.isCarport ? 'Carport Item' : 'Building Item'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-[10px] text-slate-400 uppercase font-bold mb-1 block">Unit</label>
-                                    <input
-                                        list="unit-suggestions"
-                                        className="w-full bg-black/20 border border-white/10 rounded p-2 text-white text-sm"
-                                        value={newItem.unit}
-                                        onChange={e => setNewItem({ ...newItem, unit: e.target.value })}
-                                        required
-                                        placeholder="Unit (e.g. PCS, KG)"
-                                    />
-                                    <datalist id="unit-suggestions">
-                                        {units.map(u => (
-                                            <option key={u.id} value={u.abbreviation}>{u.name}</option>
-                                        ))}
-                                    </datalist>
-                                </div>
-
-                                <div className="space-y-4 border-t border-white/5 pt-4">
-                                    {/* Cost Headers side-by-side */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <h3 className="text-[10px] text-cyan-500 uppercase font-black flex items-center gap-2">
-                                            <span className="w-1 h-3 bg-cyan-500 rounded-full" /> Material Cost
-                                        </h3>
-                                        <h3 className="text-[10px] text-purple-500 uppercase font-black flex items-center gap-2">
-                                            <span className="w-1 h-3 bg-purple-500 rounded-full" /> Labor Cost
-                                        </h3>
-                                    </div>
-
-                                    {/* Unit Costs side-by-side */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Unit Cost</label>
-                                            <input type="number" step="0.01" className="w-full bg-black/20 border border-cyan-500/30 rounded p-2 text-white text-sm" value={newItem.materialUnitPrice || ''} onChange={e => setNewItem({ ...newItem, materialUnitPrice: parseFloat(e.target.value) })} required />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Unit Cost</label>
-                                            <input type="number" step="0.01" className="w-full bg-black/20 border border-purple-500/30 rounded p-2 text-white text-sm" value={newItem.laborUnitPrice || ''} onChange={e => setNewItem({ ...newItem, laborUnitPrice: parseFloat(e.target.value) })} required />
-                                        </div>
-                                    </div>
-
-                                    {/* Totals side-by-side */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Total Mat. Cost</label>
-                                            <div className="w-full bg-cyan-500/5 border border-cyan-500/20 rounded p-2 text-cyan-400 text-sm font-mono h-[38px] flex items-center">
-                                                {((newItem.materialUnitPrice || 0) * (newItem.quantity || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Total Labor Cost</label>
-                                            <div className="w-full bg-purple-500/5 border border-purple-500/20 rounded p-2 text-purple-400 text-sm font-mono h-[38px] flex items-center">
-                                                {((newItem.laborUnitPrice || 0) * (newItem.quantity || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Final Summary Box Emerald styled */}
-                                    <div className="mt-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 group hover:bg-emerald-500/20 transition-all">
-                                        <div className="flex justify-between items-center text-[10px] text-emerald-400 uppercase font-black mb-1">
-                                            <span>Combined Item Total</span>
-                                            <span className="bg-emerald-500 text-black px-1 rounded">ESTIMATED</span>
-                                        </div>
-                                        <div className="text-xl font-black text-emerald-400 font-mono tracking-tight">
-                                            ₱ {(((newItem.materialUnitPrice || 0) + (newItem.laborUnitPrice || 0)) * (newItem.quantity || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 mt-4 shadow-lg shadow-orange-600/20 active:scale-95 transition-all">
-                                    <Save size={18} /> Add to BOQ
-                                </button>
-                            </form>
-                        </div>
-                    )}
-                </div>
-
-                {/* Project Area Metrics Display */}
-                <div className="xl:col-span-4 bg-[#1a1a20] rounded-xl border border-white/10 p-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                            <LayoutGrid size={18} className="text-cyan-500" /> Project Area Metrics
-                        </h2>
-                        <div className="flex gap-4">
-                            <div className="flex flex-col">
-                                <label className="text-[10px] text-slate-400 uppercase font-bold mb-1">Total Floor Area (sqm)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    className="bg-black/20 border border-white/10 rounded px-2 py-1 text-white text-xs w-24"
-                                    defaultValue={project?.totalFloorArea || 0}
-                                    onBlur={(e) => handleUpdateAreas(parseFloat(e.target.value) || 0, project?.carportArea || 0)}
-                                />
-                            </div>
-                            <div className="flex flex-col">
-                                <label className="text-[10px] text-slate-400 uppercase font-bold mb-1">Carport Area (sqm)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    className="bg-black/20 border border-white/10 rounded px-2 py-1 text-white text-xs w-24"
-                                    defaultValue={project?.carportArea || 0}
-                                    onBlur={(e) => handleUpdateAreas(project?.totalFloorArea || 0, parseFloat(e.target.value) || 0)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Building Metrics */}
-                        <div className="bg-white/5 rounded-lg p-4 border border-white/5 space-y-4">
-                            <h3 className="text-xs font-bold text-cyan-400 flex items-center gap-2 uppercase tracking-wider">
-                                <Home size={14} /> Main Building
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs text-slate-400">Amount Without Carport</span>
-                                    <span className="text-sm font-bold text-white font-mono">₱ {amountWithoutCarport.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs text-slate-400">Total Floor Area</span>
-                                    <span className="text-sm font-bold text-white font-mono">{floorArea.toLocaleString()} sqm</span>
-                                </div>
-                                <div className="bg-cyan-500/10 p-2 rounded flex justify-between items-center">
-                                    <span className="text-xs text-cyan-400 font-bold">Amount Per Sqm</span>
-                                    <span className="text-sm font-black text-cyan-400 font-mono">₱ {amountPerSqmBuilding.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Carport Metrics */}
-                        <div className="bg-white/5 rounded-lg p-4 border border-white/5 space-y-4">
-                            <h3 className="text-xs font-bold text-orange-400 flex items-center gap-2 uppercase tracking-wider">
-                                <Car size={14} /> Carport Section
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs text-slate-400">Amount of Carport</span>
-                                    <span className="text-sm font-bold text-white font-mono">₱ {amountOfCarport.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs text-slate-400">Carport Area</span>
-                                    <span className="text-sm font-bold text-white font-mono">{carportArea.toLocaleString()} sqm</span>
-                                </div>
-                                <div className="bg-orange-500/10 p-2 rounded flex justify-between items-center">
-                                    <span className="text-xs text-orange-400 font-bold">Amount Per Sqm</span>
-                                    <span className="text-sm font-black text-orange-400 font-mono">₱ {amountPerSqmCarport.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Summary Visualization */}
-                        <div className="bg-white/5 rounded-lg p-4 border border-white/5 flex flex-col justify-center gap-4">
-                            <div className="text-center">
-                                <div className="text-[10px] text-slate-500 uppercase font-black mb-1">Total Construction Base</div>
-                                <div className="text-xl font-black text-white font-mono">₱ {totalConstructionCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                            </div>
-                            <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden flex border border-white/5">
-                                <div
-                                    className="bg-cyan-500 h-full transition-all duration-500"
-                                    style={{ width: `${(amountWithoutCarport / totalConstructionCost) * 100 || 0}%` }}
-                                    title={`Building: ${((amountWithoutCarport / totalConstructionCost) * 100).toFixed(1)}%`}
-                                />
-                                <div
-                                    className="bg-orange-500 h-full transition-all duration-500"
-                                    style={{ width: `${(amountOfCarport / totalConstructionCost) * 100 || 0}%` }}
-                                    title={`Carport: ${((amountOfCarport / totalConstructionCost) * 100).toFixed(1)}%`}
-                                />
-                            </div>
-                            <div className="flex justify-center gap-6 text-[9px] uppercase font-bold">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-cyan-500 rounded-full" />
-                                    <span className="text-slate-400">Building</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-orange-500 rounded-full" />
-                                    <span className="text-slate-400">Carport</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                            )}
+                        </tbody>
+                        <tfoot className="border-t-2 border-white/10 bg-[#1a1a20] text-white text-[11px] font-black sticky bottom-0 z-10 shadow-[0_-4px_10px_rgba(0,0,0,0.5)]">
+                            <tr className="bg-orange-600/10">
+                                <td colSpan={4} className="p-3 text-right text-slate-400 uppercase tracking-widest border-r border-white/5">Grand Totals (Items Only)</td>
+                                <td className="p-3 text-right border-r border-white/5 text-slate-500 opacity-50 font-mono">---</td>
+                                <td className="p-3 text-right border-r border-white/5 font-mono text-cyan-400">
+                                    {totalMaterialCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="p-3 text-right border-r border-white/5 text-slate-500 opacity-50 font-mono">---</td>
+                                <td className="p-3 text-right border-r border-white/5 font-mono text-purple-400">
+                                    {totalLaborCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="p-3 text-right font-mono text-emerald-400 bg-emerald-500/10">
+                                    {totalConstructionCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
+
+            {/* Add Item Modal */}
+            <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title="Add BOQ Item">
+                <form onSubmit={handleAdd} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                            <label className="text-[10px] text-slate-400 uppercase font-black mb-1 block">Item Description</label>
+                            <input
+                                list="material-suggestions"
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-white text-sm focus:border-orange-500 outline-none transition-all"
+                                value={newItem.itemDescription}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    const mat = materials.find(m => m.name === val);
+                                    if (mat) {
+                                        setNewItem({ ...newItem, itemDescription: mat.name, unit: mat.unit });
+                                    } else {
+                                        setNewItem({ ...newItem, itemDescription: val });
+                                    }
+                                }}
+                                required
+                                placeholder="Start typing material name..."
+                            />
+                            <datalist id="material-suggestions">
+                                {materials.map(m => <option key={m.id} value={m.name} />)}
+                            </datalist>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] text-slate-400 uppercase font-black mb-1 block">Quantity</label>
+                            <input type="number" step="0.01" className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-white text-sm focus:border-orange-500 outline-none" value={newItem.quantity || ''} onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) })} required />
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] text-slate-400 uppercase font-black mb-1 block">Unit</label>
+                            <input
+                                list="unit-suggestions"
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-white text-sm focus:border-orange-500 outline-none"
+                                value={newItem.unit}
+                                onChange={e => setNewItem({ ...newItem, unit: e.target.value })}
+                                required
+                                placeholder="Unit"
+                            />
+                            <datalist id="unit-suggestions">
+                                {units.map(u => <option key={u.id} value={u.abbreviation}>{u.name}</option>)}
+                            </datalist>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <button
+                                type="button"
+                                onClick={() => setNewItem({ ...newItem, isCarport: !newItem.isCarport })}
+                                className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg border transition-all text-xs font-black uppercase tracking-widest ${newItem.isCarport
+                                    ? 'bg-orange-500/20 border-orange-500 text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.1)]'
+                                    : 'bg-cyan-500/5 border-cyan-500/20 text-cyan-500'
+                                    }`}
+                            >
+                                {newItem.isCarport ? <Car size={16} /> : <Home size={16} />}
+                                {newItem.isCarport ? 'Classified: Carport' : 'Classified: Building'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
+                        <div>
+                            <label className="text-[10px] text-cyan-500 uppercase font-black mb-1 block">Calculated Mat. Unit Cost</label>
+                            <div className="w-full bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-2.5 text-white text-sm font-mono flex items-center justify-between">
+                                <span>₱ {newItem.materialUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                <Calculator size={14} className="opacity-40" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-purple-500 uppercase font-black mb-1 block">Calculated Labor/Eq. Unit Cost</label>
+                            <div className="w-full bg-purple-500/10 border border-purple-500/30 rounded-lg p-2.5 text-white text-sm font-mono flex items-center justify-between">
+                                <span>₱ {newItem.laborUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                <Hammer size={14} className="opacity-40" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* DUPA Section */}
+                    <div className="border-t border-white/10 pt-4 space-y-3">
+                        <div className="flex justify-between items-center">
+                            <label className="text-[10px] text-orange-500 uppercase font-black tracking-widest flex items-center gap-2">
+                                <Settings size={14} /> Resource Components (DUPA)
+                            </label>
+                            <button
+                                type="button"
+                                onClick={addComponent}
+                                className="text-[9px] font-black uppercase text-cyan-500 hover:text-cyan-400 flex items-center gap-1"
+                            >
+                                <Plus size={12} /> Add Resource
+                            </button>
+                        </div>
+
+                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                            {newItem.components.map((comp, idx) => (
+                                <div key={idx} className="bg-white/5 rounded-lg p-3 border border-white/5 relative group/row">
+                                    <div className="grid grid-cols-12 gap-2 items-center">
+                                        <div className="col-span-3">
+                                            <select
+                                                className="w-full bg-black/60 border border-white/10 rounded p-1.5 text-[10px] text-white outline-none focus:border-orange-500"
+                                                value={comp.resourceType}
+                                                onChange={e => updateComponent(idx, 'resourceType', e.target.value)}
+                                            >
+                                                <option value="MATERIAL">MATERIAL</option>
+                                                <option value="LABOR">LABOR</option>
+                                                <option value="EQUIPMENT">EQUIPMENT</option>
+                                            </select>
+                                        </div>
+                                        <div className="col-span-4">
+                                            <input
+                                                type="text"
+                                                placeholder="Resource Name"
+                                                className="w-full bg-black/40 border border-white/10 rounded p-1.5 text-[10px] text-white outline-none"
+                                                value={comp.name}
+                                                onChange={e => updateComponent(idx, 'name', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <input
+                                                type="number"
+                                                step="0.0001"
+                                                placeholder="Qty"
+                                                className="w-full bg-black/40 border border-white/10 rounded p-1.5 text-[10px] text-white outline-none text-center"
+                                                value={comp.quantityFactor || ''}
+                                                onChange={e => updateComponent(idx, 'quantityFactor', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="Rate"
+                                                className="w-full bg-black/40 border border-white/10 rounded p-1.5 text-[10px] text-white outline-none text-right"
+                                                value={comp.unitRate || ''}
+                                                onChange={e => updateComponent(idx, 'unitRate', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="col-span-1 text-right">
+                                            <button type="button" onClick={() => removeComponent(idx)} className="text-slate-600 hover:text-red-500 p-1">
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end mt-1">
+                                        <span className="text-[9px] font-mono text-slate-500">
+                                            Row Total: ₱ {(Number(comp.quantityFactor) * Number(comp.unitRate)).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                            {newItem.components.length === 0 && (
+                                <div className="text-center py-6 border-2 border-dashed border-white/5 rounded-xl opacity-20 text-[9px] uppercase font-black">
+                                    No resources added yet
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex justify-between items-center group">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] text-emerald-400 uppercase font-black">Estimated Combined Total</span>
+                            <span className="text-2xl font-black text-emerald-400 font-mono">
+                                ₱ {(((newItem.materialUnitPrice || 0) + (newItem.laborUnitPrice || 0)) * (newItem.quantity || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                        <div className="p-3 bg-emerald-500/20 rounded-full text-emerald-400 group-hover:rotate-12 transition-transform">
+                            <TrendingUp size={24} />
+                        </div>
+                    </div>
+
+                    <button type="submit" className="w-full bg-orange-600 hover:bg-orange-500 text-white py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 mt-6 shadow-xl shadow-orange-600/30 active:scale-95 transition-all">
+                        <Save size={20} /> Add to BOQ
+                    </button>
+                </form>
+            </Modal>
         </div>
     );
 }
